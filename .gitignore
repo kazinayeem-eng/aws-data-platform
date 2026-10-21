@@ -205,6 +205,9 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
+# macOS
+.DS_Store
+
 # Ruff stuff:
 .ruff_cache/
 
