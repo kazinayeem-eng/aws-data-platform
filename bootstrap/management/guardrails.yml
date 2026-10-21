@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Organization guardrails (service control policy) for the NonProd and Prod
+  organizational units. Deployed by a human administrator from the management
+  account in us-east-1. Never deployed by the pipeline.
+
+Parameters:
+  OrgPrefix:
+    Type: String
+    AllowedPattern: '^[a-z][a-z0-9-]{1,12}$'
+    Description: Short lowercase prefix used in policy names.
+  PrimaryRegion:
+    Type: String
+    Default: ap-southeast-2
+    Description: The one region (besides us-east-1) where workloads may run.
+  TargetOuIds:
+    Type: CommaDelimitedList
+    Description: IDs of the NonProd and Prod organizational units (ou-xxxx-xxxxxxxx).
+
+Resources:
+  BaselineGuardrails:
+    Type: AWS::Organizations::Policy
+    Properties:
+      Name: !Sub '${OrgPrefix}-baseline-guardrails'
+      Description: Deny root user, leaving the organization, tampering with security controls and unapproved regions.
+      Type: SERVICE_CONTROL_POLICY
+      TargetIds: !Ref TargetOuIds
+      Content:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyRootUser
+            Effect: Deny
+            Action: '*'
+            Resource: '*'
+            Condition:
+              StringLike:
+                'aws:PrincipalArn': 'arn:aws:iam::*:root'
+          - Sid: DenyLeavingOrganization
+            Effect: Deny
+            Action: 'organizations:LeaveOrganization'
+            Resource: '*'
+          - Sid: ProtectSecurityControls
+            Effect: Deny
+            Action:
+              - 'cloudtrail:StopLogging'
+              - 'cloudtrail:DeleteTrail'
+              - 'guardduty:DeleteDetector'
+              - 'guardduty:DisassociateFromAdministratorAccount'
+              - 'guardduty:DisassociateFromMasterAccount'
+              - 's3:PutAccountPublicAccessBlock'
+              - 'access-analyzer:DeleteAnalyzer'
+            Resource: '*'
+          - Sid: DenyUnapprovedRegions
+            Effect: Deny
+            NotAction:
+              - 'account:*'
+              - 'acm:*'
+              - 'aws-portal:*'
+              - 'billing:*'
+              - 'budgets:*'
+              - 'ce:*'
+              - 'cloudfront:*'
+              - 'cur:*'
+              - 'globalaccelerator:*'
+              - 'health:*'
+              - 'iam:*'
+              - 'organizations:*'
+              - 'pricing:*'
+              - 'route53:*'
+              - 'route53domains:*'
+              - 's3:GetAccountPublicAccessBlock'
+              - 's3:ListAllMyBuckets'
+              - 'shield:*'
+              - 'sts:*'
+              - 'support:*'
+              - 'trustedadvisor:*'
+              - 'waf:*'
+              - 'wafv2:*'
+            Resource: '*'
+            Condition:
+              StringNotEquals:
+                'aws:RequestedRegion':
+                  - !Ref PrimaryRegion
+                  - us-east-1
+
+Outputs:
+  PolicyId:
+    Description: ID of the baseline guardrail policy.
+    Value: !Ref BaselineGuardrails
