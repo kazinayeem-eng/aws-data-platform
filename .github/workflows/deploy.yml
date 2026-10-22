@@ -1,0 +1,31 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+
+permissions:
+  contents: read
+
+jobs:
+  dev:
+    name: Deploy to dev
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: dev
+    permissions:
+      id-token: write
+      contents: read
+
+  prod:
+    name: Deploy to prod
+    needs: dev
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: prod
+    permissions:
+      id-token: write
+      contents: read

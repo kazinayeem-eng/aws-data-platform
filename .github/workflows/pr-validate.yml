@@ -1,0 +1,87 @@
+name: PR validate and preview
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Lint and policy scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+
+      - name: Install linters
+        run: pip install -r requirements-ci.txt
+
+      - name: Lint CloudFormation templates
+        run: |
+          files="$(git ls-files ':(glob)bootstrap/**/*.yml' ':(glob)stacks/**/template.yml')"
+          if [ -n "$files" ]; then
+            # shellcheck disable=SC2086
+            cfn-lint $files
+          fi
+
+      - name: Scan templates against security policies
+        # Start in soft-fail mode, triage the findings, then remove --soft-fail to enforce.
+        run: |
+          if [ -d stacks ]; then
+            checkov -d stacks --framework cloudformation --quiet --compact --soft-fail
+          fi
+
+  preview:
+    name: Preview ${{ matrix.environment }}
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: dev
+            account_id: ${{ vars.DEV_ACCOUNT_ID }}
+          - environment: prod
+            account_id: ${{ vars.PROD_ACCOUNT_ID }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Assume the plan role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::${{ matrix.account_id }}:role/${{ vars.ORG_PREFIX }}-github-plan-${{ matrix.environment }}
+          role-session-name: plan-${{ github.run_id }}
+          aws-region: ${{ vars.AWS_REGION }}
+          allowed-account-ids: ${{ matrix.account_id }}
+
+      - name: Preview change sets
+        env:
+          ORG_PREFIX: ${{ vars.ORG_PREFIX }}
+          ENVIRONMENT: ${{ matrix.environment }}
+          CFN_ROLE_ARN: arn:aws:iam::${{ matrix.account_id }}:role/${{ vars.ORG_PREFIX }}-cfn-service-${{ matrix.environment }}
+        run: |
+          shopt -s nullglob
+          for dir in stacks/*/; do
+            ./scripts/cfn-change.sh preview "$dir" "$ENVIRONMENT"
+          done
