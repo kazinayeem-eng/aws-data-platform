@@ -14,6 +14,10 @@ Bedrock with Nova Micro by default; Claude Haiku used for one comparison run in 
 
 Bedrock now grants access to serverless foundation models by default — no per-model access request. Anthropic models still need a one-time usage form. Nova Micro in Sydney may need an `apac.` cross-region inference profile ID rather than the plain model ID `amazon.nova-micro-v1:0`; Phase 0 Spike B tests which ID works and records the working ID here.
 
+## Spike B result (recorded 21 Nov 2026)
+
+The plain model ID `amazon.nova-micro-v1:0` works in ap-southeast-2 (Sydney). No `apac.` cross-region inference profile is needed.
+
 ## Alternatives considered
 
 - **Claude Sonnet as default** — better reasoning, but roughly 10–20× the token price; unjustifiable while the loop itself is what is being learned.
