@@ -1,0 +1,852 @@
+<!doctype html><html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Agentic Pipeline Assurance — Build Plan v2.0</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Patrick+Hand&family=Permanent+Marker&display=swap">
+<style>
+:root{
+  --bg:#EEF0EE; --board:#FCFCF9; --sys:#E8ECEE; --ink:#1D2433; --muted:#566170; --line:#CDD2D6;
+  --agent:#2457C5; --agent-soft:#DCE7FB; --ok:#17803F; --ok-soft:#D8F0E1;
+  --bad:#CC3326; --bad-soft:#FADFDA; --warn:#8F5B00; --warn-soft:#FBEBC8;
+  --note:#FFE680; --note-ink:#2E2800;
+  --font-display:'Permanent Marker','Marker Felt','Comic Sans MS',cursive;
+  --font-hand:'Patrick Hand','Segoe Print','Comic Sans MS',cursive;
+  --font-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1714; --board:#15231E; --sys:#1F3029; --ink:#EDEFE8; --muted:#A6B5AD; --line:#2E4239;
+    --agent:#8DBBFF; --agent-soft:#1B3050; --ok:#7EE0A0; --ok-soft:#16392A;
+    --bad:#FF8D7B; --bad-soft:#4A211B; --warn:#EBB24D; --warn-soft:#382B0D;
+    --note:#F2D96B; --note-ink:#2A2300; color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--font-body);padding:28px max(16px,env(safe-area-inset-left,0px)) 48px max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1020px;margin:0 auto;display:grid;gap:44px}
+h1,h2,h3,p,ol,ul,dl,dd,table{margin:0}
+ul,ol{padding:0;list-style:none}
+.kicker{font:500 12px/1.3 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font:400 clamp(30px,5vw,46px)/1.1 var(--font-display);text-wrap:balance;margin-top:10px}
+h2{font:400 clamp(22px,3.4vw,30px)/1.2 var(--font-display);text-wrap:balance;margin-top:8px}
+h3{font:600 17px/1.3 var(--font-body);margin-top:20px}
+.lede{margin-top:16px;max-width:66ch;font-size:17px}
+.prose{max-width:68ch}
+.prose p+p{margin-top:12px}
+.prose li{margin-top:8px;padding-left:18px;position:relative}
+.prose li::before{content:"—";position:absolute;left:0;color:var(--muted)}
+section{display:grid;gap:16px}
+.sk{border:1.5px solid var(--ink);border-radius:14px 5px 12px 6px/6px 12px 5px 14px;background:var(--board)}
+.box{padding:18px clamp(14px,3vw,24px)}
+.box p+p{margin-top:10px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:14px;font:500 13px/1.5 var(--font-mono);color:var(--muted)}
+.meta b{color:var(--ink)}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--warn-soft);color:var(--warn);font:500 12px/1.4 var(--font-mono)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.agent{background:var(--agent-soft);color:var(--agent)}
+.callout{padding:14px 16px;border:1.5px dashed var(--agent);border-radius:8px}
+.callout.warn{border-color:var(--warn)}
+.callout.bad{border-color:var(--bad)}
+.callout .kicker{color:var(--agent)}
+.callout.warn .kicker{color:var(--warn)}
+.callout.bad .kicker{color:var(--bad)}
+table.rows{border-collapse:collapse;width:100%;font-size:14px}
+table.rows th{text-align:left;font:500 12px/1.4 var(--font-mono);color:var(--muted);padding:8px 10px;border-bottom:1.5px solid var(--ink)}
+table.rows td{padding:9px 10px;vertical-align:top;border-bottom:1px solid var(--line)}
+table.rows td.mono,td.mono{font:400 13px/1.5 var(--font-mono)}
+.tablewrap{overflow-x:auto;background:var(--board);border:1.5px solid var(--ink);border-radius:8px;padding:4px 6px}
+pre{margin:6px 0 0;padding:12px 14px;background:var(--sys);border-radius:8px;font:400 12.5px/1.6 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere}
+code{font:400 .92em var(--font-mono)}
+.fig{background:var(--board);border:2px solid var(--ink);border-radius:8px 16px 8px 14px/14px 8px 16px 8px;padding:14px 6px 6px;overflow-x:auto}
+.fig svg{display:block;min-width:640px;width:100%;height:auto}
+.figcap{padding:10px 14px 12px;font-size:14px;color:var(--muted)}
+.figcap b{color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:10px;font-size:14px;color:var(--muted)}
+.legend li{display:flex;align-items:center;gap:7px}
+.sw{display:inline-block;width:20px;height:14px;border:1.5px solid var(--ink);border-radius:3px}
+.sw.a{background:var(--agent-soft);border-color:var(--agent)}
+.sw.s{background:var(--sys)}
+.sw.n{background:var(--note);border-color:var(--note-ink)}
+.sw.g{background:var(--ok-soft);border-color:var(--ok)}
+.sw.r{background:var(--bad-soft);border-color:var(--bad)}
+.tag{display:inline-block;padding:1px 8px;border-radius:999px;font:500 11px/1.6 var(--font-mono);background:var(--sys);color:var(--muted);margin-right:4px}
+.tag.done{background:var(--ok-soft);color:var(--ok)}
+.toc a{color:var(--agent);text-decoration:none}
+.toc li{margin-top:6px}
+.phase{border:1.5px solid var(--ink);border-radius:14px 5px 12px 6px/6px 12px 5px 14px;background:var(--board);padding:18px clamp(14px,3vw,24px)}
+.phase h3{margin-top:0}
+.phase .meta{margin-top:8px}
+.check li{margin-top:8px;padding-left:26px;position:relative}
+.check li::before{content:"☐";position:absolute;left:0;color:var(--muted)}
+@media (max-width:760px){.meta{gap:6px 14px}}
+</style>
+</head><body>
+<div class="wrap">
+
+<header>
+  <p class="kicker">Build plan &middot; Principal AI engineer review &middot; Draft for approval</p>
+  <h1>Agentic Pipeline Assurance: build the 20-term agentic system</h1>
+  <p class="lede">A working multi-agent incident-response system, built phase by phase from the <em>Agentic AI Pipeline Walkthrough</em>. One failed overnight load, an Orchestrator coordinating four specialist agents, a human approval, and a verified fix — built on the Mac against real AWS services, for a portfolio, at 2–3 hours a week.</p>
+  <div class="meta">
+    <span>Version <b>v2.0 — draft</b></span>
+    <span>Date <b>20 Nov 2026</b></span>
+    <span>Status <b><span class="pill">DRAFT</span></b></span>
+    <span>Owner <b>Kazi</b></span>
+    <span>Region <b>ap-southeast-2 (Sydney)</b></span>
+    <span>Budget ceiling <b>US $10 / month</b></span>
+  </div>
+</header>
+
+<section aria-labelledby="sum-h">
+  <div>
+    <p class="kicker">1 &middot; Summary — read this first</p>
+    <h2 id="sum-h">What we are building, what it costs, what could go wrong</h2>
+  </div>
+  <div class="box sk">
+    <p><strong>The problem.</strong> The walkthrough shows a complete agentic system on paper: an overnight data load fails at 02:14 from a renamed column, and four agents plus a human fix it safely before the 08:00 deadline. Kazi wants to learn agentic AI by building that system for real — and to end up with a portfolio piece that proves it, not a demo that only works on a laptop.</p>
+    <p><strong>The recommendation.</strong> Build it in 9 phases over 20 weeks at 2–3 hours a week, following the v1.1 architecture. Python throughout. Strands Agents SDK for the agents, Amazon Bedrock (Nova Micro) for the model, S3 for raw files, PostgreSQL with pgvector for the analytics table and RAG, DynamoDB for memory (<code>apa-memory</code>) and approvals (<code>apa-approvals</code>), Step Functions plus SNS for the human approval. Phases 1–7 run on the Mac — the pipeline job, the agent runtime and the MCP tool servers run locally with uv against Docker Postgres, calling Bedrock, S3, DynamoDB, SNS and X-Ray as real AWS services via the <code>apa</code> profile. Phase 8 deploys the same code to Lambda and RDS. Every one of the 20 terms from the walkthrough is built, in a named phase, with a test that proves it works.</p>
+    <p><strong>The cost.</strong> About <strong>US $1–3 a month while building</strong> (Bedrock tokens and S3, essentially), provided the database lives on the Mac during development and RDS is only switched on for the final demo, then deleted (with a snapshot). If RDS is left running 24/7 it adds about $13–15 a month on its own — see §10 and ADR-004.</p>
+    <p><strong>The top three risks.</strong> (1) Time: 2–3 hours a week is thin, so phases are sized to one sitting each and every phase ends in something working. (2) Bedrock model access in Sydney: Nova Micro may need an <code>apac.</code> cross-region inference profile ID rather than the plain model ID — Phase 0 Spike B tests which ID works before any agent runs. (3) Scope creep: all 20 terms is a lot, so the plan is phased with gates — a phase does not start until the previous one passes its checks.</p>
+    <p><strong>What I am asking you to approve.</strong> This plan as written — stack, phases, budget rule, and the definition of done for each phase. No code is written until you say yes. If you disagree with any ADR in §8, that is the place to argue: each one names the alternative it rejected.</p>
+  </div>
+</section>
+
+<section aria-labelledby="goals-h">
+  <div>
+    <p class="kicker">2 &middot; Goals, non-goals, constraints</p>
+    <h2 id="goals-h">What “done” means — and what it does not</h2>
+  </div>
+  <div class="prose">
+    <h3>Goals</h3>
+    <ul>
+      <li><strong>Learn by building, not by reading.</strong> Every term in the walkthrough is implemented, not just described. If a term has no code and no test, it is not done.</li>
+      <li><strong>End with a portfolio piece.</strong> A public-ready repo with a README a stranger can follow, architecture docs, tests, a recorded demo of the 02:14 incident fixing itself, and a cost screenshot proving the $10 ceiling.</li>
+      <li><strong>Stay inside US $10/month, every month.</strong> The budget is a design constraint, not a hope. §10 prices every service; §11 names the traps.</li>
+      <li><strong>Fit a real calendar.</strong> 2–3 hours a week, on a Mac, in Python at “can write scripts, not apps” level. Phases are sized to that.</li>
+    </ul>
+    <h3>Non-goals (explicitly out of scope)</h3>
+    <ul>
+      <li>Production readiness for real customer data. This uses synthetic customer data only. No real PII, ever.</li>
+      <li>High availability, multi-region, or scale beyond one nightly run. One run a night, on demand, is the load.</li>
+      <li>A managed-agent service (Bedrock Agents, AgentCore Runtime) as the primary runtime. We build on the SDK so the learning is in the code, not the console.</li>
+      <li>Fine-tuning a model. Prompting, tools, retrieval and guardrails are the levers here.</li>
+    </ul>
+    <h3>Constraints (fixed — the plan is built around these)</h3>
+    <div class="tablewrap"><table class="rows">
+      <tr><th>Constraint</th><th>Value</th><th>Consequence for the plan</th></tr>
+      <tr><td>Time</td><td class="mono">2–3 hrs / week</td><td>9 phases, each 1–4 weeks (20 weeks total); no phase depends on a heroic weekend.</td></tr>
+      <tr><td>Python level</td><td>Scripts, not apps</td><td>Phase 0 teaches packaging with uv, tests and CloudFormation before any agent code. No assumed knowledge of classes, async, or Docker beyond what Phase 0 covers.</td></tr>
+      <tr><td>Machine</td><td>Personal Mac</td><td>Phases 1–7 run on the Mac (Docker Postgres + uv); the pipeline job, agent runtime and MCP tool servers run locally and call real AWS services. Phase 8 deploys the same code to Lambda + RDS via GitHub Actions (OIDC) applying CloudFormation templates. No EC2 dev server.</td></tr>
+      <tr><td>AWS account</td><td>Paid (not free tier)</td><td>Only always-free allowances are relied on. RDS is demo-only in Phase 8, deleted (with a snapshot) the same day. Budget alarms are Phase 0, not an afterthought.</td></tr>
+      <tr><td>Region</td><td class="mono">ap-southeast-2</td><td>All resources in Sydney. Bedrock model access is automatic for serverless foundation models; Phase 0 Spike B confirms which Nova Micro ID works in Sydney (plain model ID or an <code>apac.</code> inference profile).</td></tr>
+      <tr><td>Budget</td><td class="mono">≤ US $10 / month</td><td>Every phase lists its cost. If a phase would breach it, the phase is redesigned, not the budget.</td></tr>
+      <tr><td>Scope</td><td>All 20 terms</td><td>Phased, with a coverage map (§7). Nothing is “covered” by a paragraph — each term has code and a test.</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section aria-labelledby="contents-h">
+  <div>
+    <p class="kicker">How to read this plan</p>
+    <h2 id="contents-h">Contents</h2>
+  </div>
+  <ol class="toc prose">
+    <li><a href="#sum-h">1 — Summary</a></li>
+    <li><a href="#goals-h">2 — Goals, non-goals, constraints</a></li>
+    <li><a href="#ctx-h">3 — System context (C4 level 1)</a></li>
+    <li><a href="#cont-h">4 — Containers (C4 level 2)</a></li>
+    <li><a href="#comp-h">5 — Agent runtime components (C4 level 3)</a></li>
+    <li><a href="#seq-h">6 — One incident, end to end (sequence)</a></li>
+    <li><a href="#data-h">7 — Data model, interfaces, and the 20-term coverage map</a></li>
+    <li><a href="#adr-h">8 — Architecture decisions (ADRs)</a></li>
+    <li><a href="#plan-h">9 — Phased delivery plan (Phases 0–8)</a></li>
+    <li><a href="#cost-h">10 — Cost model</a></li>
+    <li><a href="#risk-h">11 — Risks, testing, and portfolio packaging</a></li>
+    <li><a href="#decide-h">12 — Decisions needed from you</a></li>
+  </ol>
+</section>
+
+<section aria-labelledby="ctx-h">
+  <div>
+    <p class="kicker">3 &middot; C4 level 1 — System context</p>
+    <h2 id="ctx-h">The system as one box</h2>
+  </div>
+  <p class="prose">One box, the people who touch it, and the systems outside it. No technology inside the box yet — that is the next diagram. The boundary is deliberate: everything inside the box is code Kazi writes; everything outside it is a service the system calls.</p>
+  <div class="fig">
+  <svg viewBox="0 0 680 400" role="img" aria-label="C4 level 1 context diagram">
+    <rect x="20" y="60" width="130" height="70" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="85" y="92" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Kazi</text>
+    <text x="85" y="112" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Learner / operator</text>
+    <rect x="20" y="250" width="130" height="70" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="85" y="282" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">On-call engineer</text>
+    <text x="85" y="302" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Approves live changes</text>
+    <rect x="250" y="110" width="200" height="170" rx="8" fill="var(--agent-soft)" stroke="var(--agent)" stroke-width="2"/>
+    <text x="350" y="150" text-anchor="middle" font-size="17" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Agentic Pipeline Assurance</text>
+    <text x="350" y="174" text-anchor="middle" font-size="12.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Multi-agent incident response</text>
+    <text x="350" y="196" text-anchor="middle" font-size="12.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Detects → diagnoses → fixes</text>
+    <text x="350" y="218" text-anchor="middle" font-size="12.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">→ verifies, with a human</text>
+    <text x="350" y="248" text-anchor="middle" font-size="12.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">sign-off on live changes</text>
+    <rect x="520" y="40" width="140" height="62" rx="8" fill="var(--sys)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="590" y="66" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Source database</text>
+    <text x="590" y="86" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">(simulated — seeded)</text>
+    <rect x="520" y="150" width="140" height="62" rx="8" fill="var(--sys)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="590" y="176" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Amazon Bedrock</text>
+    <text x="590" y="196" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Nova Micro model</text>
+    <rect x="520" y="260" width="140" height="62" rx="8" fill="var(--sys)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="590" y="286" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Email via SNS</text>
+    <text x="590" y="306" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Approval requests</text>
+    <line x1="150" y1="95" x2="250" y2="140" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="160" y="100" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">triggers incident, views dashboard</text>
+    <line x1="150" y1="285" x2="250" y2="250" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="150" y="300" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">approve / reject</text>
+    <line x1="450" y1="150" x2="520" y2="180" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="452" y="148" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">prompts + tool calls</text>
+    <line x1="450" y1="240" x2="520" y2="290" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="452" y="272" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">approval request</text>
+    <line x1="520" y1="71" x2="450" y2="120" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="470" y="60" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">nightly files, 02:00</text>
+  </svg>
+  <p class="figcap"><b>Figure 1 — System context.</b> The system never touches a real source database or real customer data. The source is a seeded simulator that Kazi controls — including the column rename that causes the incident. The on-call engineer is Kazi wearing a second hat, which is honest for a portfolio: the approval step is real (it blocks the swap), even though the approver and the builder are the same person.</p>
+  </div>
+  <ul class="legend"><li><span class="sw a"></span>System being built</li><li><span class="sw s"></span>External system</li><li><span class="sw"></span>Person</li></ul>
+</section>
+
+<section aria-labelledby="cont-h">
+  <div>
+    <p class="kicker">4 &middot; C4 level 2 — Containers</p>
+    <h2 id="cont-h">The deployable pieces</h2>
+  </div>
+  <p class="prose">Each box here is something that runs separately or stores data separately. The arrows name the protocol, not just the direction. Three things to notice: the agents never touch production data directly — they only call tools; the database is drawn once (local Docker in Phases 1–7, RDS in Phase 8) because it is one responsibility; and the approval path has its own table and endpoint, separate from agent memory, so no agent can approve its own work.</p>
+  <div class="fig">
+  <svg viewBox="0 0 680 575" role="img" aria-label="C4 level 2 container diagram">
+    <defs><marker id="f2arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker><marker id="f2arrBad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--bad)"/></marker></defs>
+    <rect x="30" y="20" width="190" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="125" y="44" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">EventBridge Scheduler</text>
+    <text x="125" y="63" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">nightly 02:00 trigger</text>
+    <rect x="250" y="20" width="190" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="345" y="44" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Step Functions</text>
+    <text x="345" y="63" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">pipeline + approval wait</text>
+    <rect x="470" y="20" width="190" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="565" y="44" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">DynamoDB · apa-memory</text>
+    <text x="565" y="63" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">memory: runs + lessons</text>
+    <rect x="30" y="116" width="190" height="70" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="125" y="142" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">S3 — raw files</text>
+    <text x="125" y="161" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">nightly delta files, 7 days</text>
+    <rect x="250" y="116" width="190" height="70" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="345" y="142" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Pipeline job</text>
+    <text x="345" y="161" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">ingest + transform</text>
+    <text x="345" y="176" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Mac (Ph 1–7) · Lambda (Ph 8)</text>
+    <rect x="470" y="116" width="190" height="70" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="565" y="142" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">PostgreSQL + pgvector</text>
+    <text x="565" y="161" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">analytics table + vectors</text>
+    <text x="565" y="176" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Docker (Ph 1–7) · RDS (Ph 8)</text>
+    <rect x="30" y="226" width="190" height="70" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="125" y="252" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">FastMCP tool servers</text>
+    <text x="125" y="271" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">read_job_logs, get_table_schema…</text>
+    <text x="125" y="286" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Mac (Ph 1–7) · Lambda (Ph 8)</text>
+    <rect x="250" y="226" width="190" height="70" rx="8" fill="var(--agent-soft)" stroke="var(--agent)" stroke-width="2"/>
+    <text x="345" y="252" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Strands agent runtime</text>
+    <text x="345" y="271" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Orchestrator (hub) + 4 agents</text>
+    <text x="345" y="286" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Mac (Ph 1–7) · Lambda (Ph 8)</text>
+    <rect x="470" y="226" width="190" height="70" rx="8" fill="var(--sys)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="565" y="252" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Amazon Bedrock</text>
+    <text x="565" y="271" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Nova Micro</text>
+    <text x="565" y="286" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">(+ Haiku, Phase 7 comparison)</text>
+    <rect x="30" y="336" width="190" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="125" y="360" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">SNS → email</text>
+    <text x="125" y="379" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">approval requests</text>
+    <rect x="250" y="336" width="190" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="345" y="360" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Approve endpoint</text>
+    <text x="345" y="379" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Lambda Function URL</text>
+    <rect x="470" y="336" width="190" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="565" y="360" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">DynamoDB · apa-approvals</text>
+    <text x="565" y="379" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">only the endpoint writes</text>
+    <rect x="30" y="432" width="190" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="125" y="456" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Dashboard publisher</text>
+    <text x="125" y="475" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Lambda — writes verified numbers</text>
+    <rect x="250" y="432" width="190" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="345" y="456" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Dashboard (static site)</text>
+    <text x="345" y="475" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">S3 + CloudFront</text>
+    <rect x="470" y="432" width="190" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="565" y="456" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">CloudWatch + X-Ray</text>
+    <text x="565" y="475" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">logs, metrics, traces</text>
+    <line x1="220" y1="48" x2="250" y2="48" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f2arr)"/>
+    <text x="235" y="40" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">02:00</text>
+    <line x1="345" y1="76" x2="345" y2="116" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f2arr)"/>
+    <text x="352" y="100" text-anchor="start" font-size="10" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">start load</text>
+    <line x1="250" y1="151" x2="220" y2="151" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f2arr)"/>
+    <text x="235" y="143" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">reads</text>
+    <line x1="440" y1="151" x2="470" y2="151" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f2arr)"/>
+    <text x="455" y="143" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">writes</text>
+    <polyline points="440,48 449,48 449,245 440,245" fill="none" stroke="var(--bad)" stroke-width="2" marker-end="url(#f2arrBad)" stroke-dasharray="5,4"/>
+    <text x="449" y="150" text-anchor="middle" font-size="11" fill="var(--bad)" font-family="IBM Plex Sans,sans-serif" transform="rotate(-90 449 150)">on failure → Orchestrator</text>
+    <polyline points="440,235 461,235 461,48 470,48" fill="none" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f2arr)"/>
+    <line x1="250" y1="261" x2="220" y2="261" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f2arr)"/>
+    <text x="235" y="253" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">tools</text>
+    <line x1="440" y1="278" x2="470" y2="278" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f2arr)"/>
+    <line x1="220" y1="364" x2="250" y2="364" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f2arr)"/>
+    <text x="235" y="356" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">link</text>
+    <line x1="440" y1="364" x2="470" y2="364" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f2arr)"/>
+    <text x="455" y="356" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">writes</text>
+    <line x1="220" y1="460" x2="250" y2="460" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f2arr)"/>
+    <text x="235" y="452" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">writes</text>
+    <polyline points="300,20 300,10 15,10 15,364 30,364" fill="none" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f2arr)" stroke-dasharray="5,4"/>
+    <text x="15" y="200" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif" transform="rotate(-90 15 200)">approval: SNS email + wait</text>
+    <text x="340" y="520" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Scheduler → Step Functions → Pipeline job (reads S3, writes Postgres)</text>
+    <text x="340" y="538" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">On failure, Step Functions invokes the Orchestrator · runtime calls MCP + Bedrock + apa-memory</text>
+    <text x="340" y="556" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Approval: SNS + approve endpoint → apa-approvals · publisher writes dashboard · traces to X-Ray</text>
+    </svg>
+  <p class="figcap"><b>Figure 2 — Containers.</b> The pipeline (top rows) and the agents (middle row) are separate deployables joined by one event: a failed load, which Step Functions catches and hands to the Orchestrator (red dashed arrow). The agents never get database credentials — the MCP tool servers do, and each tool is allow-listed. Postgres is shown once; where it runs (Docker on the Mac in Phases 1–7 vs RDS in Phase 8) is a deployment decision in §8, ADR-004, not a second database. Approvals live in their own table (<code>apa-approvals</code>), writable only by the approve endpoint — never in <code>apa-memory</code>. The pipeline job, agent runtime, MCP servers and Postgres run on the Mac in Phases 1–7 and deploy as Lambdas / RDS in Phase 8. All containers emit logs to CloudWatch and traces to X-Ray (one trace per incident). Diagrams scroll sideways on narrow screens.</p>
+  </div>
+  <ul class="legend"><li><span class="sw a"></span>Agent runtime (the code being learned)</li><li><span class="sw s"></span>AWS managed service</li><li><span class="sw"></span>Code / machine Kazi owns</li></ul>
+</section>
+
+<section aria-labelledby="comp-h">
+  <div>
+    <p class="kicker">5 &middot; C4 level 3 — Components</p>
+    <h2 id="comp-h">Inside the agent runtime</h2>
+  </div>
+  <p class="prose">Only one container is complex enough to need a level-3 diagram: the agent runtime. Everything in it is a Python module with one job. If a module's job cannot be stated in one sentence, it is two modules.</p>
+  <div class="fig">
+  <svg viewBox="0 0 680 550" role="img" aria-label="C4 level 3 component diagram of the agent runtime">
+    <defs><marker id="f3arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker></defs>
+    <rect x="10" y="10" width="660" height="525" rx="10" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="30" y="38" font-size="14" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Strands agent runtime — Mac process (Phases 1–7) / Lambda (Phase 8)</text>
+    <rect x="250" y="40" width="180" height="56" rx="8" fill="var(--agent-soft)" stroke="var(--agent)" stroke-width="2"/>
+    <text x="340" y="64" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Orchestrator — the hub</text>
+    <text x="340" y="83" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">briefs, validates every handoff</text>
+    <line x1="340" y1="96" x2="340" y2="113" stroke="var(--ink)" stroke-width="1.5" marker-start="url(#f3arr)" marker-end="url(#f3arr)"/>
+    <line x1="95" y1="113" x2="590" y2="113" stroke="var(--ink)" stroke-width="1.5"/>
+    <line x1="95" y1="113" x2="95" y2="130" stroke="var(--ink)" stroke-width="1.5" marker-start="url(#f3arr)" marker-end="url(#f3arr)"/>
+    <line x1="260" y1="113" x2="260" y2="130" stroke="var(--ink)" stroke-width="1.5" marker-start="url(#f3arr)" marker-end="url(#f3arr)"/>
+    <line x1="425" y1="113" x2="425" y2="130" stroke="var(--ink)" stroke-width="1.5" marker-start="url(#f3arr)" marker-end="url(#f3arr)"/>
+    <line x1="590" y1="113" x2="590" y2="130" stroke="var(--ink)" stroke-width="1.5" marker-start="url(#f3arr)" marker-end="url(#f3arr)"/>
+    <rect x="20" y="130" width="150" height="56" rx="8" fill="var(--agent-soft)" stroke="var(--agent)" stroke-width="1.5"/>
+    <text x="95" y="154" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Detector</text>
+    <text x="95" y="173" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Agent 01 · what failed</text>
+    <rect x="185" y="130" width="150" height="56" rx="8" fill="var(--agent-soft)" stroke="var(--agent)" stroke-width="1.5"/>
+    <text x="260" y="154" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Diagnoser</text>
+    <text x="260" y="173" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Agent 02 · why + evidence</text>
+    <rect x="350" y="130" width="150" height="56" rx="8" fill="var(--agent-soft)" stroke="var(--agent)" stroke-width="1.5"/>
+    <text x="425" y="154" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Fixer</text>
+    <text x="425" y="173" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Agent 03 · gated swap</text>
+    <rect x="515" y="130" width="150" height="56" rx="8" fill="var(--agent-soft)" stroke="var(--agent)" stroke-width="1.5"/>
+    <text x="590" y="154" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Verifier</text>
+    <text x="590" y="173" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Agent 04 · checks twice</text>
+    <rect x="30" y="230" width="180" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="120" y="254" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Context builder</text>
+    <text x="120" y="273" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">briefs: 6 items, no logs</text>
+    <rect x="250" y="230" width="180" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="340" y="254" text-anchor="middle" font-size="13" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Tool registry (MCP client)</text>
+    <text x="340" y="273" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">discovers + calls MCP tools</text>
+    <rect x="470" y="230" width="180" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="560" y="254" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Guardrail hooks</text>
+    <text x="560" y="273" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">block before the call lands</text>
+    <rect x="30" y="320" width="180" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="120" y="344" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Memory client</text>
+    <text x="120" y="363" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">short-term run · long-term</text>
+    <rect x="250" y="320" width="180" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="340" y="344" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Approval handoff</text>
+    <text x="340" y="363" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">returns 'approval needed'</text>
+    <rect x="470" y="320" width="180" height="56" rx="8" fill="var(--board)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="560" y="344" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Trace emitter (OTel)</text>
+    <text x="560" y="363" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">every step → X-Ray</text>
+    <rect x="30" y="410" width="620" height="56" rx="8" fill="var(--sys)" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="340" y="434" text-anchor="middle" font-size="13.5" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Handoff package — the contract between agents</text>
+    <text x="340" y="453" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">done · next · owner · evidence · do-not-touch — a typed dict, validated on receipt, never free text</text>
+    <text x="340" y="482" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">Rule enforced by the runtime, not by prompting: an agent cannot call a tool that is not in the registry,</text>
+    <text x="340" y="500" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">and cannot write to production. Guardrail hook + tool-server authorisation + Postgres role all refuse, independently.</text>
+    <text x="340" y="518" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">IAM roles do not control Postgres writes and mean nothing on local Docker.</text>
+    </svg>
+  <p class="figcap"><b>Figure 3 — Agent runtime components.</b> The Orchestrator is the hub: it briefs each specialist and validates every handoff before the next agent acts — no agent hands work directly to another. The four specialist agents are Strands <code>Agent</code> objects with different system prompts and different tool allow-lists — not four codebases. The interesting engineering lives in the supporting modules: the context builder (what the agent is allowed to see), the guardrail hooks (what it is never allowed to do), and the handoff package (how agents pass work without losing information). When approval is needed the runtime returns control to Step Functions, which sends the SNS email and waits — the wait does not live in the agent runtime. The Verifier checks through MCP tools like every other agent; it has no direct Postgres access. Diagrams scroll sideways on narrow screens.</p>
+  </div>
+</section>
+
+<section aria-labelledby="seq-h">
+  <div>
+    <p class="kicker">6 &middot; Dynamic view — one incident, end to end</p>
+    <h2 id="seq-h">02:14 to 08:00, step by step</h2>
+  </div>
+  <p class="prose">The sequence is the acceptance test for the whole system. If the built system cannot replay these steps against the seeded incident, it is not done — whichever phase it is in.</p>
+  <div class="fig">
+    <svg viewBox="0 0 1250 870" role="img" aria-label="Sequence diagram of the incident response">
+    <defs><marker id="f4arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker><marker id="f4arrBad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--bad)"/></marker><marker id="f4arrOk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ok)"/></marker></defs>
+    <text x="50" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Scheduler</text>
+    <line x1="50" y1="34" x2="50" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="146" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Step Functions</text>
+    <line x1="146" y1="34" x2="146" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="242" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Lambda</text>
+    <line x1="242" y1="34" x2="242" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="338" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Orchestrator</text>
+    <line x1="338" y1="34" x2="338" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="434" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Detector</text>
+    <line x1="434" y1="34" x2="434" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="530" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Diagnoser</text>
+    <line x1="530" y1="34" x2="530" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="626" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">pgvector</text>
+    <line x1="626" y1="34" x2="626" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="722" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Fixer</text>
+    <line x1="722" y1="34" x2="722" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="818" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Verifier</text>
+    <line x1="818" y1="34" x2="818" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="914" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Human</text>
+    <line x1="914" y1="34" x2="914" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="1010" y="24" text-anchor="middle" font-size="10" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Approve endpoint</text>
+    <line x1="1010" y1="34" x2="1010" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="1106" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">apa-approvals</text>
+    <line x1="1106" y1="34" x2="1106" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <text x="1202" y="24" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">Publisher</text>
+    <line x1="1202" y1="34" x2="1202" y2="850" stroke="var(--line)" stroke-width="1.5"/>
+    <line x1="50" y1="70" x2="146" y2="70" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="98" y="62" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">1 · 02:00 load starts</text>
+    <line x1="146" y1="96" x2="242" y2="96" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="194" y="88" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">2 · run ingest + transform</text>
+    <line x1="242" y1="122" x2="146" y2="122" stroke="var(--bad)" stroke-width="2" marker-end="url(#f4arrBad)"/>
+    <text x="194" y="114" text-anchor="middle" font-size="11" fill="var(--bad)" font-family="IBM Plex Sans,sans-serif">3 · 02:14 FAILED: cust_status not found</text>
+    <line x1="146" y1="148" x2="338" y2="148" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="242" y="140" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">4 · invoke Orchestrator</text>
+    <line x1="338" y1="174" x2="434" y2="174" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="386" y="166" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">5 · brief (6 items)</text>
+    <line x1="434" y1="200" x2="338" y2="200" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="386" y="192" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">6 · handoff: what failed</text>
+    <line x1="338" y1="226" x2="530" y2="226" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="434" y="218" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">6 · brief Diagnoser</text>
+    <line x1="530" y1="252" x2="626" y2="252" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="578" y="244" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">7 · RAG: search_runbook</text>
+    <line x1="626" y1="278" x2="530" y2="278" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="578" y="270" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">7 · runbook 4.2 + contract v3</text>
+    <line x1="530" y1="304" x2="338" y2="304" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="434" y="296" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">8 · handoff: cause + evidence</text>
+    <line x1="338" y1="330" x2="722" y2="330" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="530" y="322" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">8 · brief Fixer</text>
+    <polyline points="722,356 757,356 757,370 722,370" fill="none" stroke="var(--bad)" stroke-width="2" marker-end="url(#f4arrBad)"/>
+    <text x="740" y="348" text-anchor="middle" font-size="11" fill="var(--bad)" font-family="IBM Plex Sans,sans-serif">9 · overwrite → BLOCKED</text>
+    <polyline points="722,382 757,382 757,396 722,396" fill="none" stroke="var(--ok)" stroke-width="2" marker-end="url(#f4arrOk)"/>
+    <text x="740" y="374" text-anchor="middle" font-size="11" fill="var(--ok)" font-family="IBM Plex Sans,sans-serif">10 · test copy: 0 errors</text>
+    <line x1="722" y1="408" x2="338" y2="408" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="530" y="400" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">11 · handoff: test copy ready</text>
+    <line x1="338" y1="434" x2="818" y2="434" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="578" y="426" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">11 · brief Verifier</text>
+    <line x1="818" y1="460" x2="338" y2="460" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="578" y="452" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">12 · test copy 4/4 pass</text>
+    <line x1="338" y1="486" x2="146" y2="486" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="242" y="478" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">12 · approval needed</text>
+    <line x1="146" y1="512" x2="914" y2="512" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="530" y="504" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">13 · 02:40 SNS email: approval requested (waitForTaskToken)</text>
+    <line x1="914" y1="538" x2="1010" y2="538" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="962" y="530" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">14 · clicks confirm link (signed token)</text>
+    <line x1="1010" y1="564" x2="1106" y2="564" stroke="var(--ok)" stroke-width="2" marker-end="url(#f4arrOk)"/>
+    <text x="1058" y="556" text-anchor="middle" font-size="11" fill="var(--ok)" font-family="IBM Plex Sans,sans-serif">15 · writes approval record</text>
+    <line x1="1010" y1="590" x2="146" y2="590" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="578" y="582" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">16 · resume (task token)</text>
+    <line x1="146" y1="616" x2="338" y2="616" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="242" y="608" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">16 · approval granted</text>
+    <line x1="338" y1="642" x2="722" y2="642" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="530" y="634" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">17 · brief: swap</text>
+    <line x1="722" y1="668" x2="1106" y2="668" stroke="var(--ok)" stroke-width="2" marker-end="url(#f4arrOk)"/>
+    <text x="914" y="660" text-anchor="middle" font-size="11" fill="var(--ok)" font-family="IBM Plex Sans,sans-serif">18 · swap_tables checks approval, then swaps + publishes mapping v2</text>
+    <line x1="722" y1="694" x2="338" y2="694" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="530" y="686" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">19 · handoff: swapped</text>
+    <line x1="338" y1="720" x2="818" y2="720" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="578" y="712" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">19 · brief Verifier (live)</text>
+    <line x1="818" y1="746" x2="338" y2="746" stroke="var(--ok)" stroke-width="2" marker-end="url(#f4arrOk)"/>
+    <text x="578" y="738" text-anchor="middle" font-size="11" fill="var(--ok)" font-family="IBM Plex Sans,sans-serif">20 · live 4/4 pass</text>
+    <line x1="338" y1="772" x2="146" y2="772" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="242" y="764" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">20 · done</text>
+    <line x1="146" y1="798" x2="1202" y2="798" stroke="var(--ink)" stroke-width="1.5" marker-end="url(#f4arr)"/>
+    <text x="674" y="790" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">21 · publish dashboard</text>
+    <line x1="1202" y1="824" x2="50" y2="824" stroke="var(--ok)" stroke-width="2" marker-end="url(#f4arrOk)"/>
+    <text x="626" y="816" text-anchor="middle" font-size="11" fill="var(--ok)" font-family="IBM Plex Sans,sans-serif">22 · 08:00 dashboard correct, full trace recorded</text>
+    </svg>
+  <p class="figcap"><b>Figure 4 — Sequence (22 steps).</b> Every handoff passes through the Orchestrator, which validates it before briefing the next agent — no agent hands work directly to another. Steps 9, 13, 14 and 15 are the steps most tutorials skip and this plan does not: the blocked overwrite (guardrails), the pause (Step Functions holds the wait with waitForTaskToken while the SNS email is out), the approval through a confirm page, and the approval record written to <code>apa-approvals</code> — the swap tool checks that record itself, so the swap cannot run without a matching, unexpired, single-use approval. Step 7 is the RAG retrieval: the Diagnoser calls search_runbook and pulls runbook 4.2 + contract v3 from pgvector, rather than the model guessing from memory. The Verifier checks twice: the test copy in step 12, before any approval is requested, and live in step 20, after the swap — a failed post-swap check rolls back to <code>customers_prev</code>. A build that skips from step 8 to step 18 has built a demo, not the system. Diagrams scroll sideways on narrow screens.</p>
+  </div>
+</section>
+
+<section aria-labelledby="data-h">
+  <div>
+    <p class="kicker">7 &middot; Data, interfaces, coverage</p>
+    <h2 id="data-h">Data model, contracts, and where each of the 20 terms lives</h2>
+  </div>
+  <h3>Data model — four stores, each with one job</h3>
+  <div class="tablewrap"><table class="rows">
+    <tr><th>Store</th><th>What lives there</th><th>Shape</th><th>Why this store</th></tr>
+    <tr><td>S3 <span class="mono">agentic-pipeline-assurance-raw</span></td><td>Nightly delta extracts as uploaded by the (simulated) source. 7 days retained, then expired by lifecycle rule.</td><td class="mono">s3://…/raw/dt=2026-11-18/customers.csv</td><td>Cheap, durable, and the failure mode (a renamed column in the file) is visible in the object itself.</td></tr>
+    <tr><td>PostgreSQL + pgvector <span class="mono">analytics.customers</span></td><td>The analytics table (3 years of seeded history, ~1.2M rows); <span class="mono">customers_test</span> staging copy; <span class="mono">customers_prev</span> (the previous live table, kept for rollback); <span class="mono">documents</span> table holding runbook + contract chunks with embeddings.</td><td class="mono">customers(customer_id, cust_status, …); documents(id, source, chunk, embedding vector(1024))</td><td>One database for the table, the sandbox copy, and RAG vectors — no second vector store to pay for or learn.</td></tr>
+    <tr><td>DynamoDB <span class="mono">apa-memory</span></td><td>Short-term: this run's findings. Long-term: past incidents and their fixes (e.g. the September rename — “update the mapping, don’t rebuild”). Never approvals — those live in <code>apa-approvals</code>.</td><td class="mono">PK=incident#2026-11-18, SK=note#…; PK=lesson#sept-rename, SK=meta</td><td>Always-free allowance; single-digit-ms reads; no server to run.</td></tr>
+    <tr><td>DynamoDB <span class="mono">apa-approvals</span></td><td>One record per approval: incident ID, test-copy hash, expiry, used flag. Only the approve endpoint writes; <code>swap_tables</code> reads it and refuses unless the record matches this incident AND this test copy's hash, is unexpired, and is unused.</td><td class="mono">PK=incident#2026-11-18, SK=approval#…; attributes: test_hash, expires_at, used</td><td>Separate trust boundary from agent memory — an agent that can write memory cannot approve itself.</td></tr>
+  </table></div>
+  <p class="prose" style="margin-top:12px">Synthetic data only. The seeder generates 1.2M plausible customer rows locally; no real names, emails, or customer data are ever loaded. Load semantics, pinned: files are <strong>nightly deltas</strong>. Live keeps the contract column <code>cust_status</code>; the rename (<code>cust_status</code> → <code>customer_status</code>) happens in the <strong>file</strong>, not in live — nothing in live drifted. The fix is mapping v2 (<code>customer_status</code> → <code>cust_status</code>), published with the swap so tomorrow's load passes. <code>customers_test</code> is cloned from live first, so a swap is safe, and the old live table is kept as <code>customers_prev</code> for rollback. The rename is applied by the seeder on demand, so the incident is reproducible on any night.</p>
+
+  <h3>Interfaces — the contracts agents must honour</h3>
+  <div class="prose">
+    <p><strong>MCP tools (each a FastMCP tool, each with a typed schema).</strong> <code>read_job_logs(job, since)</code> → log lines; <code>get_table_schema(table)</code> → columns; <code>search_runbook(query)</code> → ranked chunks with sources; <code>write_test_copy(mapping)</code> → row count + errors; <code>run_checks(table)</code> → the 4 checks with pass/fail; <code>swap_tables(test, live)</code> → only callable after approval, enforced by the tool server checking the <code>apa-approvals</code> record (matching incident AND test-copy hash, unexpired, unused), not by the agent promising; <code>publish_mapping(version)</code> → records mapping v2 so tomorrow's load uses it. The Verifier calls <code>run_checks</code> through MCP like every other agent — it has no direct Postgres access. Tools return data, never prose. An agent that wants a fact calls a tool; an agent that guesses is a bug.</p>
+    <p><strong>A2A messages.</strong> Task request / task accepted / task result, using the A2A protocol over HTTP between the Orchestrator and specialists when they run as separate services in Phase 6. In earlier phases the same message shapes travel in-process — same schema, different transport, so Phase 6 changes deployment, not logic.</p>
+    <p><strong>Handoff package (validated, typed).</strong></p>
+    <pre>{
+  "done": "cause confirmed: column rename",
+  "next": "update mapping, reload tonight's data",
+  "owner": "fixer-01",
+  "evidence": ["log 02:14 'Column not found'",
+               "schema diff source vs mapping",
+               "change note 17:40 yesterday"],
+  "do_not_touch": ["analytics.customers (live)"]
+}</pre>
+    <p><strong>Human approval payload (SNS email).</strong> What broke, what was tested (test-copy row count, errors, and the Verifier's 4-check result), exactly what will change (swap <code>customers_test</code> → <code>customers</code>, publish mapping v2), and what happens if it is not approved. The email links to a confirmation page on the approve endpoint (Lambda Function URL) — a scanner prefetching the link cannot approve; approving needs a deliberate click, which sends a signed single-use token. The endpoint checks the token and writes the approval to <code>apa-approvals</code>. No approval, no swap — the swap tool refuses without a matching approval record.</p>
+    <p><strong>Matching approval, defined.</strong> A record in <code>apa-approvals</code> matches only if it names this incident ID, the hash of this test copy, has not expired, and has not been used before. The swap tool checks all four; a record that fails any of them is refused. The Step Functions wait (<code>waitForTaskToken</code>) times out after 30 minutes — if the human has not approved by then, the incident stays open and the live table is untouched.</p>
+  </div>
+
+  <h3>The 20-term coverage map — every term, its phase, its proof</h3>
+  <p class="prose">“Covered” means implemented and tested, not mentioned. The proof column is what you will be able to show a reviewer.</p>
+  <div class="tablewrap"><table class="rows">
+    <tr><th>#</th><th>Term</th><th>Phase</th><th>Proof it works</th></tr>
+    <tr><td>1</td><td>Agentic Pipeline</td><td>1–2</td><td>Step Functions execution: alert in → fixed table out, visible in the console.</td></tr>
+    <tr><td>2</td><td>Orchestrator</td><td>6</td><td>One goal in, four tasks out; every handoff passes through the Orchestrator, which validates it; log shows delegation and the approval decision point.</td></tr>
+    <tr><td>3</td><td>Context Engineering</td><td>2</td><td>Fixer brief is 6 items; test asserts a known raw log line is absent from the brief.</td></tr>
+    <tr><td>4</td><td>Multi-Agent System</td><td>6</td><td>Four agents, four allow-lists; removing one agent fails its phase's test.</td></tr>
+    <tr><td>5</td><td>Agent Identity</td><td>4</td><td>Every action stamped with agent id + role; the Fixer's Postgres role can read production and write staging but cannot write production, and the tool server authenticates which agent is calling (test tries, fails). IAM roles do not control Postgres writes.</td></tr>
+    <tr><td>6</td><td>Agent Loop</td><td>2</td><td>Trace shows perceive → plan → act → observe cycles ending when the cause is found.</td></tr>
+    <tr><td>7</td><td>Tool Use</td><td>2</td><td>Detector's finding cites a real <code>get_table_schema</code> result, not model text.</td></tr>
+    <tr><td>8</td><td>Grounding</td><td>3</td><td>Every claim in the diagnosis carries a source; a claim without one is written “unknown”.</td></tr>
+    <tr><td>9</td><td>Guardrails</td><td>4</td><td>The overwrite attempt is blocked by all three layers (client hook, tool-server authorisation, Postgres role), logged, and the live table is byte-identical afterwards.</td></tr>
+    <tr><td>10</td><td>Policy Layer</td><td>4</td><td>Live write without a matching approval in <code>apa-approvals</code> is refused at the tool server, not just in the prompt; the Fixer cannot approve itself.</td></tr>
+    <tr><td>11</td><td>MCP</td><td>2</td><td>A new tool is added by registering it on the MCP server; no agent code changes.</td></tr>
+    <tr><td>12</td><td>A2A</td><td>6</td><td>Orchestrator ↔ Fixer exchange over A2A; a non-A2A client cannot impersonate an agent.</td></tr>
+    <tr><td>13</td><td>Handoffs</td><td>6</td><td>A handoff missing <code>evidence</code> is rejected by validation; the run stops cleanly.</td></tr>
+    <tr><td>14</td><td>RAG</td><td>3</td><td>Diagnoser retrieves runbook 4.2 for “column renamed”; retrieval test with 10 questions.</td></tr>
+    <tr><td>15</td><td>Memory</td><td>3</td><td>Diagnoser recalls the September rename and its fix; test seeds it, then removes it, and the answer changes.</td></tr>
+    <tr><td>16</td><td>Sandboxing</td><td>4</td><td>Test copy loads 1,204,331 rows, 0 errors; live table untouched (row count + hash compared).</td></tr>
+    <tr><td>17</td><td>Human-in-the-Loop</td><td>4</td><td>Swap does not happen until the human clicks through the confirm page and the approve endpoint writes a single-use record to <code>apa-approvals</code>; timeout path leaves the live table alone.</td></tr>
+    <tr><td>18</td><td>Evaluation (Evals)</td><td>5</td><td>4 checks, 4 passes, recorded; 20-case eval set scores ≥ 17/20 (85%) on every change (pass mark in §11).</td></tr>
+    <tr><td>19</td><td>Agent Observability</td><td>7</td><td>One X-Ray trace per incident replayable end to end: who, which tool, what came back.</td></tr>
+    <tr><td>20</td><td>Agent Protocols</td><td>7</td><td>Fixer swapped for a differently-built agent behind the same MCP/A2A contracts; nothing else changes.</td></tr>
+  </table></div>
+</section>
+
+<section aria-labelledby="adr-h">
+  <div>
+    <p class="kicker">8 &middot; Architecture decisions</p>
+    <h2 id="adr-h">ADRs — each decision, and what it beat</h2>
+  </div>
+  <p class="prose">Status: <span class="pill ok">ACCEPTED</span> — ADR-001…010 were all decided by Kazi on 18 Nov 2026. ADR-011 is new in v2.0 (20 Nov 2026) and is <span class="pill">DRAFT</span> until this plan is approved. These live in the repo at <code>docs/adr/</code> from Phase 0.</p>
+
+  <h3>ADR-001 — Strands Agents SDK as the agent framework</h3>
+  <div class="box sk"><p><strong>Context.</strong> The system needs a model-driven agent loop, MCP tool consumption, multi-agent patterns, human-approval interrupts, and tracing — and the builder is learning, so the framework must not demand framework expertise first.</p>
+  <p><strong>Decision.</strong> Use Strands Agents SDK (Python), with Amazon Bedrock as the model provider.</p>
+  <p><strong>Alternatives considered.</strong> <em>LangGraph</em> — explicit graph control and the best debugging story, but every step is hand-wired, which is more framework to learn before the first agent runs. <em>Bedrock Agents (managed)</em> — no code, but the learning goal is the code, and console configuration cannot be reviewed in a repo. <em>Raw boto3 + hand-rolled loop</em> — maximum learning about the loop, but re-implements retries, tool parsing and interrupts badly.</p>
+  <p><strong>Consequences.</strong> Fastest path to a working agent; MCP and A2A are native, not adapters. Cost: the agent loop's behaviour is partly the framework's, so the plan includes reading the loop code in Phase 2 rather than treating it as magic. Revisit if: Strands cannot express the approval handoff cleanly in Phase 4 — LangGraph is the named fallback.</p></div>
+
+  <h3>ADR-002 — Amazon Bedrock, Nova Micro as the default model</h3>
+  <div class="box sk"><p><strong>Context.</strong> Agents need a model that is cheap enough to run hundreds of learning iterations, available in ap-southeast-2, and capable enough to follow tool schemas.</p>
+  <p><strong>Decision.</strong> Bedrock with Nova Micro by default; Claude Haiku used for one comparison run in Phase 7 so the evals can show the cost/quality trade-off with numbers.</p>
+  <p><strong>Model access.</strong> Bedrock now grants access to serverless foundation models by default — no per-model access request. Anthropic models still need a one-time usage form. Nova Micro in Sydney may need an <code>apac.</code> cross-region inference profile ID rather than the plain model ID <code>amazon.nova-micro-v1:0</code>; Phase 0 Spike B tests which ID works and records the working ID here.</p>
+  <p><strong>Alternatives considered.</strong> <em>Claude Sonnet as default</em> — better reasoning, but roughly 10–20× the token price; unjustifiable while the loop itself is what is being learned. <em>Local models via Ollama</em> — free, but tool-calling reliability on small local models is poor and would teach the wrong lessons about agent behaviour. <em>OpenAI API</em> — fine model, wrong cloud: it adds a second bill and a second credential for no benefit.</p>
+  <p><strong>Consequences.</strong> Model spend stays in cents. The evals in Phase 5 are model-specific and must be re-run if the model changes — that is documented, not hidden. Revisit if: Nova Micro fails the tool-calling evals in Phase 5 (pass mark: 20-case set ≥ 17/20, §11); Haiku becomes the default and the cost model is re-priced.</p></div>
+
+  <h3>ADR-003 — PostgreSQL + pgvector for the table, the sandbox, and RAG</h3>
+  <div class="box sk"><p><strong>Context.</strong> The system needs a relational analytics table, a scratch copy for safe testing, and vector search over runbooks. The budget forbids a dedicated vector database.</p>
+  <p><strong>Decision.</strong> One PostgreSQL database (pgvector extension) holds <code>customers</code>, <code>customers_test</code>, and the <code>documents</code> embedding table.</p>
+  <p><strong>Alternatives considered.</strong> <em>Bedrock Knowledge Bases + OpenSearch Serverless</em> — the AWS-native RAG path, but OpenSearch Serverless has a ~$70/month minimum: seven times the entire budget, before a single query. <em>DynamoDB + a separate vector store</em> — two stores, two bills, and DynamoDB is a poor fit for the analytics table. <em>SQLite + local vectors</em> — free, but SQLite cannot be the deployed analytics table, so the deployment would diverge from development.</p>
+  <p><strong>Consequences.</strong> One database to learn, one to pay for, and retrieval quality is measurable with a 10-question test. Cost: pgvector at 1.2M-row scale is not a production vector store; nobody should claim it is. Revisit if: retrieval precision falls below the Phase 3 pass mark after chunking and prompt fixes.</p></div>
+
+  <h3>ADR-004 — Mac-local for Phases 1–7; RDS only for the Phase 8 demo, then deleted</h3>
+  <div class="box sk"><p><strong>Context.</strong> The account is paid, so the 12-month RDS free tier is assumed expired. An RDS db.t3.micro left running costs ~$13–15/month — over budget alone. And a cloud Lambda cannot reach a database on the Mac, so the topology must be decided before any phase is written: either the database moves to the cloud (and the plan must price the VPC), or the code runs on the Mac (and Phase 8 is the deployment).</p>
+  <p><strong>Decision.</strong> Phases 1–7 run on the Mac: the pipeline job, the agent runtime and the MCP tool servers run locally with uv against PostgreSQL in Docker, calling Bedrock, S3, DynamoDB, SNS and X-Ray as real AWS services via the <code>apa</code> profile. The deployed Lambda path (ADR-005/ADR-010) is the Phase 8 target, not how Phases 1–7 execute — no phase's definition of done requires a cloud Lambda to reach the Mac. RDS is deployed once, in Phase 8, for the recorded demo, and deleted the same day (with a snapshot) — not stopped, because a stopped RDS instance auto-restarts after 7 days. This keeps Phases 1–7 free of VPC costs: no NAT gateway, no VPC endpoints.</p>
+  <p><strong>Alternatives considered.</strong> <em>RDS from Phase 1, left running</em> — simplest, but breaches the budget every month. <em>RDS from Phase 1 in a VPC</em> — Lambdas in a VPC need NAT or VPC endpoints to reach Bedrock and SNS; NAT alone adds ~$30/month and breaks the budget. <em>RDS started/stopped per session</em> — saves money but adds a start/stop ritual to every 2-hour session and teaches nothing. <em>Neon/Supabase free tier</em> — genuinely free Postgres with pgvector, but it moves the database off AWS and weakens the “built on AWS” portfolio story.</p>
+  <p><strong>Consequences.</strong> Build cost stays at $1–3/month and no VPC is needed until Phase 8. The deployment step is practised exactly once, deliberately, in Phase 8 — and the demo recording is the evidence it worked. The Mac-local code and the deployed Lambda code are the same Python (uv packaging, ADR-009), so Phase 8 is a deployment change, not a rewrite. Revisit if: the account is found to still hold RDS free-tier hours in the Phase 0 spike (Spike A), in which case RDS can be used from Phase 1 at no cost — but only if the VPC cost is also covered.</p></div>
+
+  <h3>ADR-005 — Lambda for every job and tool; no EC2, no AgentCore Runtime as primary</h3>
+  <div class="box sk"><p><strong>Context.</strong> Jobs and tools need somewhere to run. The always-free Lambda allowance (1M requests + 400,000 GB-seconds/month) covers this workload many times over.</p>
+  <p><strong>Decision.</strong> Ingest, transform, MCP tool servers and the agent runtime all run as Lambda functions in the deployed (Phase 8) topology, and locally on the Mac during Phases 1–7 (ADR-004). No EC2.</p>
+  <p><strong>Alternatives considered.</strong> <em>Bedrock AgentCore Runtime</em> — the managed agent host, but it is pay-per-use with no free tier and hides the runtime the portfolio is meant to demonstrate. <em>EC2 t3.micro</em> — a familiar server, but it must be patched, kept running, and paid for when idle. <em>ECS/Fargate</em> — the right answer at real scale, and the wrong answer for one nightly run.</p>
+  <p><strong>Consequences.</strong> Zero idle cost; cold starts are irrelevant at one run a night. Cost: Lambda's 15-minute limit constrains the transform job — the seeded load is sized to finish in under 5 minutes, and the plan says so explicitly. The human approval wait never sits inside a Lambda — Step Functions holds it with <code>waitForTaskToken</code> (§7), so the 15-minute cap cannot be hit by an 18-minute human. Revisit if: a phase needs a long-running process (it should not — see §11).</p></div>
+
+  <h3>ADR-006 — Step Functions orchestrates the pipeline; Strands orchestrates the agents</h3>
+  <div class="box sk"><p><strong>Context.</strong> Two different orchestration problems exist: the nightly pipeline (a fixed sequence with a failure branch) and the incident response (a goal split into tasks, with a human decision in the middle). One tool for both would be a compromise.</p>
+  <p><strong>Decision.</strong> Step Functions owns the pipeline: schedule → load → on failure, invoke agents → on approval-needed, send the SNS email and hold the wait with <code>waitForTaskToken</code> (30-minute timeout) → on approval, resume → on success, finish. Strands owns the agent teamwork: the Orchestrator agent splits the goal and delegates. The boundary is the failure event, and the return is the approval decision.</p>
+  <p><strong>Alternatives considered.</strong> <em>Everything in Step Functions</em> — visible and robust, but agent reasoning does not belong in a state machine; every prompt change becomes a deployment. <em>Everything in Strands</em> — the pipeline schedule and retries would be re-implemented in Python for no benefit. <em>Cron + Lambda chaining</em> — works, but failures are invisible compared with a state-machine execution view.</p>
+  <p><strong>Consequences.</strong> Each orchestrator does what it is good at, and the portfolio shows both. Cost: two things to learn instead of one — Phase 1 teaches Step Functions before any agent exists, so the learning is sequenced.</p></div>
+
+  <h3>ADR-007 — DynamoDB for memory; no separate memory service</h3>
+  <div class="box sk"><p><strong>Context.</strong> Agents need short-term memory (this run) and long-term memory (past incidents). Managed memory services exist, but they are another bill and another API.</p>
+  <p><strong>Decision.</strong> DynamoDB table <code>apa-memory</code>, on-demand, inside the always-free allowance. Short-term notes are written per run; long-term lessons are explicit records, not embeddings. Approvals are NOT stored here — they live in <code>apa-approvals</code> (ADR-011), in a separate trust boundary.</p>
+  <p><strong>Alternatives considered.</strong> <em>Bedrock AgentCore Memory</em> — managed and good, but pay-per-use and it would hide the memory design the portfolio is meant to show. <em>Postgres for memory too</em> — possible, but mixing run memory into the analytics database blurs the boundary the architecture is trying to teach. <em>Files on disk / in S3</em> — free, but no querying and no story about memory as a system component.</p>
+  <p><strong>Consequences.</strong> Memory is a visible, testable design: the Phase 3 test proves a lesson changes the diagnosis. Cost: DynamoDB's data model (partition/sort keys) must be learned in Phase 3 — it is scoped to one table and one access pattern, deliberately.</p></div>
+
+  <h3>ADR-008 — Evals are a fixed 20-case set, run on every change; no eval platform</h3>
+  <div class="box sk"><p><strong>Context.</strong> “It worked once” is not evidence. The portfolio needs repeatable proof that the agents behave — and that a change did not break them.</p>
+  <p><strong>Decision.</strong> A versioned set of 20 eval cases (10 retrieval, 5 diagnosis, 5 end-to-end incident replays) run by a plain pytest script, scored automatically, with results committed to the repo. No third-party eval platform.</p>
+  <p><strong>Alternatives considered.</strong> <em>LangSmith / Langfuse hosted</em> — better tooling, but another account, another bill, and hosted traces of a learning project. <em>Manual “try it and see”</em> — the default for tutorials and the reason most agent demos cannot be trusted. <em>Bedrock model evaluation jobs</em> — useful for the Phase 7 model comparison only, not for the daily loop.</p>
+  <p><strong>Consequences.</strong> Every phase gate includes “evals still pass”. The eval set itself is a portfolio artefact a reviewer can run. Cost: writing good eval cases is real work — it is budgeted as its own phase (Phase 5), not squeezed into a Friday night.</p>
+  <p><strong>Status.</strong> <span class="pill ok">ACCEPTED</span> 18 Nov 2026.</p></div>
+
+  <h3>ADR-009 — uv as the Python package and environment manager</h3>
+  <div class="box sk"><p><strong>Context.</strong> The project needs reproducible Python environments on the Mac and in CI, with pinned dependencies a reviewer can reproduce exactly. Phase 0 needs to name one tool for this, not leave it to chance.</p>
+  <p><strong>Decision.</strong> Use <a href="https://docs.astral.sh/uv/">uv</a> (Astral) for everything Python: <code>uv python install 3.12</code> for the interpreter, <code>uv init</code> / <code>uv add</code> for dependencies, <code>uv sync</code> to build the environment, <code>uv run</code> to execute. Dependencies are declared in <code>pyproject.toml</code> and pinned in the committed <code>uv.lock</code> lockfile.</p>
+  <p><strong>The one wrinkle, and how it is handled.</strong> Lambda deployment packages are built from the lockfile, not by hand: CI runs <code>uv export --format requirements-txt</code>, installs into a target directory, zips it, uploads the zip to S3, and passes the S3 location to CloudFormation as a parameter (see ADR-010). Local development and tests run under <code>uv run</code>; the packaged zip is what gets deployed. No other ADR changes.</p>
+  <p><strong>Alternatives considered.</strong> <em>pip + venv (original plan)</em> — works, but no lockfile, so “works on my machine” is a real risk for a portfolio repo. <em>Poetry</em> — lockfile and good UX, but slower, heavier, and its Lambda story is worse than uv's export path. <em>pip-tools</em> — lockfile via <code>pip-compile</code>, but it is two tools doing what uv does in one.</p>
+  <p><strong>Consequences.</strong> Reproducible environments from one lockfile; faster installs; one tool instead of three. Cost: uv is a new tool to learn in Phase 0 — budgeted there, about 30 minutes, and it replaces the venv lesson rather than adding to it. Revisit if: <code>uv export</code> output ever fails a CloudFormation deploy, in which case the fallback is a hand-maintained <code>requirements.txt</code> checked by CI against the lockfile.</p>
+  <p><strong>Status.</strong> <span class="pill ok">ACCEPTED</span> 18 Nov 2026.</p></div>
+
+  <h3>ADR-010 — CloudFormation templates, deployed by GitHub Actions</h3>
+  <div class="box sk"><p><strong>Context.</strong> Kazi prefers native CloudFormation templates deployed through a GitHub pipeline. The deployment story must still be reviewable in the repo, repeatable, and fully deletable — and for a portfolio, a CI/CD pipeline is itself evidence.</p>
+  <p><strong>Decision.</strong> Infrastructure is plain CloudFormation YAML in <code>infra/</code> (one root template, <code>infra/main.yaml</code>, with the Step Functions definition written as JSON/YAML by hand). Deployment runs in GitHub Actions: on push to <code>main</code> (and on manual dispatch), the workflow builds the Lambda zips from the uv lockfile, uploads them to a deployment S3 bucket, then runs <code>aws cloudformation deploy</code>. GitHub authenticates to AWS with OIDC — no long-lived AWS access keys stored in GitHub. The OIDC trust policy allows only this repo's own branches and the named workflows — fork pull requests cannot assume the role, so a fork cannot spend the Bedrock budget. The deploy workflow runs only on push to <code>main</code> (and manual dispatch), never on fork PRs. A second workflow runs the evals and unit tests on every pull request. Nothing is deployed from the Mac; the console is for reading (logs, traces, executions), not for creating resources.</p>
+  <p><strong>Alternatives considered.</strong> <em>CDK (Python)</em> — more expressive, but a second framework to learn in Phase 0 and its generated templates are harder to read in a portfolio review. <em>Terraform</em> — excellent, but another tool and a state file, with no advantage at this scale. <em>Manual <code>aws cloudformation deploy</code> from the Mac</em> — works, but unreviewable as a process and it teaches nothing about CI/CD.</p>
+  <p><strong>Consequences.</strong> The Lambda packaging step must be scripted explicitly (<code>scripts/build.sh</code>: <code>uv export</code> → install to target dir → zip → upload to S3). The project reuses the existing repo pipeline — OIDC role, <code>deploy.yml</code> (dev → prod) and <code>pr-validate.yml</code> (cfn-lint) in <code>kazinayeem-eng/aws-data-platform</code> — so Phase 0 adds a stack to a working pipeline instead of building one. In exchange: every deployment is a reviewed, repeatable pipeline run; the portfolio shows CI/CD, not just code; and there is no layer between the repo and AWS. Cost: GitHub Actions is free for public repos; OIDC costs nothing. Revisit if: the CloudFormation template grows past ~500 lines, at which point splitting it into nested stacks is the fix — not a move to CDK.</p>
+  <p><strong>Status.</strong> <span class="pill ok">ACCEPTED</span> 18 Nov 2026 — decided by Kazi.</p></div>
+  <h3>ADR-011 — Approvals in their own DynamoDB table; only the approve endpoint writes</h3>
+  <div class="box sk"><p><strong>Context.</strong> The swap must not run without a human approval, and the approval must be checkable by the tool that performs the swap. If the approval record lives in the same table the agents write memory to, any agent that can write memory can approve its own work — the Fixer could approve itself.</p>
+  <p><strong>Decision.</strong> A separate DynamoDB table <code>apa-approvals</code>, on-demand, inside the always-free allowance. Only the approve endpoint (Lambda Function URL) can write to it. The approval record is bound to the incident ID, the hash of the test copy, an expiry, and a single-use flag. <code>swap_tables</code> reads the record and refuses unless all four match. The email link opens a confirmation page (so a scanner prefetching the link cannot approve); approving needs a deliberate click that sends a signed single-use token.</p>
+  <p><strong>Alternatives considered.</strong> <em>Approval record in <code>apa-memory</code></em> — one fewer table, but the Fixer writes memory, so it could write its own approval; rejected on the trust boundary. <em>Key-scoped IAM on one table</em> — DynamoDB item-level IAM is coarse and hard to audit; a separate table is a clearer boundary. <em>Approval as a Step Functions token only, no table</em> — the token proves the human clicked, but the swap tool needs a durable, checkable record tied to the test copy's hash; the token alone does not carry it.</p>
+  <p><strong>Consequences.</strong> The approval is a durable, auditable record a reviewer can read. Cost: one more on-demand table inside the always-free allowance — $0. The approve endpoint is a second Lambda to deploy (Phase 4), and the confirm page is a small static page. Revisit if: the approval flow needs more than one approver, in which case the record gains an approver field — the table shape, not the boundary, changes.</p>
+  <p><strong>Status.</strong> <span class="pill">DRAFT</span> 20 Nov 2026 — new in v2.0, for approval with this plan.</p></div>
+</section>
+
+<section aria-labelledby="plan-h">
+  <div>
+    <p class="kicker">9 &middot; Phased delivery plan</p>
+    <h2 id="plan-h">Phases 0–8 — in order, gated, no skipping</h2>
+  </div>
+  <p class="prose">Total: <strong>20 weeks at 2–3 hours a week — about five months</strong>. That is the honest number for all 20 terms at this pace, and it is stated here so nobody is surprised in week 6. Each phase has an entry condition (the previous phase's gate passed), a definition of done written as checks, and a cost. A phase is not “mostly done”. It passes its checks or it is not done.</p>
+  <p class="prose">Working rule for every phase: <strong>one sitting, one visible result.</strong> At 2–3 hours a week, a phase is 1–6 sittings. If a sitting ends with nothing working, the phase is too big and gets split — that is a plan correction, not a failure.</p>
+
+  <div class="phase">
+    <h3>Phase 0 — Foundations (1 week) · Terms: none directly; enables all</h3>
+    <div class="meta"><span>Entry: <b>plan approved</b></span><span>Time: <b>1 week</b></span><span>Cost: <b>$0</b></span></div>
+    <p style="margin-top:10px"><strong>Goal.</strong> The machine, the account, and the repo are ready, and the two unknowns are answered before any building starts.</p>
+    <ul class="check">
+      <li>Mac: Python 3.12 via <code>uv python install 3.12</code>, <code>uv</code> itself, git, AWS CLI v2, Docker Desktop, <code>psql</code>. No bare <code>pip</code>/venv — see ADR-009 and ADR-010.</li>
+      <li>Existing repo reused: clone <code>kazinayeem-eng/aws-data-platform</code> (public, deployment already working). The project lives in it as a new stack under <code>stacks/agentic-pipeline-assurance/template.yaml</code>, following the repo's <code>stacks/**/template.yaml</code> convention. It reuses the repo's OIDC pipeline identity (<code>bootstrap/workload/pipeline-identity.yml</code>), <code>deploy.yml</code> (dev → prod) and <code>pr-validate.yml</code> (cfn-lint + policy scan) — no new repo, no new OIDC role, no long-lived AWS keys in GitHub, ever. Add <code>pyproject.toml</code> + committed <code>uv.lock</code> inside <code>stacks/agentic-pipeline-assurance/</code> (not the repo root — <code>uv init</code> at the root would drop files there), <code>docs/adr/</code> with ADR-001…011 copied from §8, extend <code>deploy.yml</code> with the build-zip-and-upload step (<code>scripts/build.sh</code>), and extend <code>pr-validate.yml</code> with the test + eval jobs. The OIDC trust is scoped so fork PRs cannot assume the role (ADR-010).</li>
+      <li><strong>Spike A — account:</strong> confirm whether any RDS free-tier hours remain; record the answer in ADR-004.</li>
+      <li><strong>Spike B — Bedrock:</strong> model access is automatic for serverless foundation models (no access request; Anthropic models still need a one-time usage form). Test which Nova Micro ID works in ap-southeast-2 — the plain model ID <code>amazon.nova-micro-v1:0</code> or an <code>apac.</code> cross-region inference profile — with one <code>aws bedrock-runtime invoke-model</code> call from the CLI (use <code>--cli-binary-format raw-in-base64-out</code> for a raw JSON body in CLI v2) and save the output; record the working ID in ADR-002.</li>
+      <li>Budget alarms: AWS Budgets at $5 and $10, plus a billing alarm — created before any resource exists.</li>
+      <li>PostgreSQL 16 + pgvector running in Docker on the Mac, with a <code>docker compose up</code> one-liner in the README.</li>
+    </ul>
+    <p><strong>Definition of done.</strong> A hello-world Lambda deploys through the GitHub workflow and is deleted with <code>aws cloudformation delete-stack</code>; both budget alarms exist and are tested; the two spike answers are written down; a second person could set up from the README alone.</p>
+  </div>
+
+  <div class="phase">
+    <h3>Phase 1 — The pipeline, no agents (2 weeks) · Term 1 (Agentic Pipeline, pipeline half)</h3>
+    <div class="meta"><span>Entry: <b>Phase 0 gate passed</b></span><span>Time: <b>2 weeks</b></span><span>Cost: <b>&lt; $1</b></span></div>
+    <p style="margin-top:10px"><strong>Goal.</strong> The nightly load exists, works, and fails in exactly the way the walkthrough describes — before any agent is allowed near it.</p>
+    <ul class="check">
+      <li>Seeder generates 1.2M synthetic customer rows into the local Postgres <code>customers</code> table (3 years of history).</li>
+      <li>S3 bucket with 7-day lifecycle expiry; simulated source writes the nightly CSV.</li>
+      <li>Lambda ingest + transform, driven by a Step Functions state machine on an EventBridge 02:00 schedule (plus a manual trigger for learning). The load is schedule-driven only — there is no S3 event trigger on ingest.</li>
+      <li>Failure injection: a seeder flag renames <code>cust_status</code> → <code>customer_status</code>; the transform fails with the exact error from the walkthrough.</li>
+      <li>Static dashboard (the walkthrough's result section, simplified) plus a publisher Lambda that writes the verified numbers to it — a static S3 site cannot query Postgres, so the publisher reads the table and writes the dashboard. Freshness is a load timestamp written by the transform on each run — not the newest <code>signup_date</code>.</li>
+    </ul>
+    <p><strong>Definition of done.</strong> A clean run loads and the publisher writes fresh numbers to the dashboard; a renamed-column run fails, the Step Functions execution shows the failure branch, and the dashboard shows stale numbers. Both are reproducible on demand.</p>
+  </div>
+
+  <div class="phase">
+    <h3>Phase 2 — Detector, tools, and the agent loop (2 weeks) · Terms 3, 6, 7, 11</h3>
+    <div class="meta"><span>Entry: <b>Phase 1 gate passed</b></span><span>Time: <b>2 weeks</b></span><span>Cost: <b>&lt; $1</b></span></div>
+    <p style="margin-top:10px"><strong>Goal.</strong> The first agent, and the discipline it runs under: tools, not guesses; a brief, not the whole log file.</p>
+    <ul class="check">
+      <li>FastMCP tool server with <code>read_job_logs</code> and <code>get_table_schema</code>; tools return typed data.</li>
+      <li>Detector agent (Strands) with a 2-tool allow-list; the agent loop (perceive → plan → act → observe) is visible in logs.</li>
+      <li>Context builder: the Detector's brief contains exactly 6 items — schema diff, runbook, owner, target, rules, deadline — and nothing else. A test asserts a known raw log line is absent from the brief.</li>
+      <li>Read the Strands loop code once, and write a one-paragraph note in the repo explaining what it does — no magic boxes.</li>
+    </ul>
+    <p><strong>Definition of done.</strong> Given a failed run, the Detector reports the missing column and cites the <code>get_table_schema</code> result. Adding a third tool requires no change to the Detector's code. The brief-size test passes.</p>
+  </div>
+
+  <div class="phase">
+    <h3>Phase 3 — Diagnoser: RAG, memory, grounding (2 weeks) · Terms 8, 14, 15</h3>
+    <div class="meta"><span>Entry: <b>Phase 2 gate passed</b></span><span>Time: <b>2 weeks</b></span><span>Cost: <b>&lt; $1</b></span></div>
+    <p style="margin-top:10px"><strong>Goal.</strong> The diagnosis is evidence-based and remembers the past — the two things that separate an agent from a chatbot with tools.</p>
+    <ul class="check">
+      <li>Runbook 4.2 (“Handling column renames”) and the customers data contract written as short Markdown, chunked, embedded with Bedrock Titan, stored in the pgvector <code>documents</code> table.</li>
+      <li><code>search_runbook</code> tool; Diagnoser retrieves before it explains.</li>
+      <li>DynamoDB <code>apa-memory</code>: short-term notes for the run; one long-term lesson (the September orders-table rename, fix: update the mapping).</li>
+      <li>Grounding rule enforced in code: every claim in the diagnosis carries a source reference; anything without one is rendered “unknown”.</li>
+    </ul>
+    <p><strong>Definition of done.</strong> A 10-question retrieval test scores ≥ 8/10. The diagnosis for the seeded incident cites the log line, the schema diff, and the change note. Deleting the September lesson changes the Diagnoser's suggested fix — proving memory is load-bearing, not decorative.</p>
+  </div>
+
+  <div class="phase">
+    <h3>Phase 4 — Fixer: sandbox, guardrails, policy, identity, human approval (4 weeks) · Terms 5, 9, 10, 16, 17</h3>
+    <div class="meta"><span>Entry: <b>Phase 3 gate passed</b></span><span>Time: <b>4 weeks</b></span><span>Cost: <b>&lt; $1</b></span></div>
+    <p style="margin-top:10px"><strong>Goal.</strong> The most important phase. The Fixer can repair the table — and cannot destroy it. This is the phase the portfolio is really about.</p>
+    <ul class="check">
+      <li><code>write_test_copy</code>: builds <code>customers_test</code> with the new mapping and loads tonight's files; reports rows and errors.</li>
+      <li>Guardrail hook + tool-server authorisation + Postgres role: any attempt to overwrite the live table in one step is blocked before the call lands, logged, and the agent must re-plan. All three layers refuse independently — test each one on its own (disable the hook and the tool server still refuses; call as the Fixer role and Postgres still refuses). The blocked attempt leaves the live table byte-identical (row count + hash).</li>
+      <li>Agent identity: separate Postgres roles per agent, and the tool server authenticates which agent is calling. The Fixer's Postgres role can read production and write staging, and cannot write production. Test tries, and fails. (IAM roles do not control Postgres writes.)</li>
+      <li>Policy: <code>swap_tables</code> refuses unless a matching approval record exists in <code>apa-approvals</code> (incident ID + test-copy hash + unexpired + unused). The check lives in the tool server, not in the prompt.</li>
+      <li>Approve endpoint (Lambda Function URL) + <code>apa-approvals</code> table: the endpoint serves the confirm page, checks the signed single-use token, and writes the approval record. Only the endpoint can write to <code>apa-approvals</code>.</li>
+      <li>Human-in-the-loop: SNS email with what broke, what was tested (test-copy row count and errors), and exactly what will change; the email links to the confirm page. Step Functions holds the wait with <code>waitForTaskToken</code> (30-minute timeout). A timeout or rejection leaves the live table alone and the incident open. (Phase 5 adds the Verifier's 4-check result to the email.)</li>
+    </ul>
+    <p><strong>Definition of done.</strong> The full Fixer path runs end to end: blocked overwrite → test copy loads with 0 errors → approval email → confirm page → approval → swap → dashboard fresh. And the negative paths all hold: no approval means no swap; a blocked overwrite changes nothing; a rejected approval leaves the live table alone.</p>
+  </div>
+
+  <div class="phase">
+    <h3>Phase 5 — Verifier and the eval set (2 weeks) · Term 18</h3>
+    <div class="meta"><span>Entry: <b>Phase 4 gate passed</b></span><span>Time: <b>2 weeks</b></span><span>Cost: <b>&lt; $1</b></span></div>
+    <p style="margin-top:10px"><strong>Goal.</strong> Proof replaces “it worked on my machine”. The system can now say, with numbers, whether a change helped or hurt.</p>
+    <ul class="check">
+      <li><code>run_checks</code>: the 4 checks (row count = live-before + file rows; column names match the contract and no null keys; status values in the contract set; 100-row sample matches the source) with pass/fail each.</li>
+      <li>Verifier wired into the flow: the approval request now carries the pre-approval 4-check result (a failing check blocks the approval request); after the swap, the Verifier re-runs the 4 checks on live, and a failure rolls back to <code>customers_prev</code>.</li>
+      <li>20-case eval set (10 retrieval, 5 diagnosis, 5 end-to-end replays) as a pytest suite; results written to a file committed with the change that produced them.</li>
+      <li>Deliberate-regression test: break the mapping on purpose and confirm the evals catch it.</li>
+      <li>GitHub Actions runs the evals on every push (free for public repos).</li>
+    </ul>
+    <p><strong>Definition of done.</strong> The 4 checks pass 4/4 on a fixed table (test copy and live). The eval suite runs in CI and scores ≥ 17/20 (85%) — the pass mark (§11). The deliberate regression turns it red. The eval set is documented well enough that a reviewer can run it.</p>
+  </div>
+
+  <div class="phase">
+    <h3>Phase 6 — Orchestrator, multi-agent, A2A, handoffs (2 weeks) · Terms 2, 4, 12, 13</h3>
+    <div class="meta"><span>Entry: <b>Phase 5 gate passed</b></span><span>Time: <b>2 weeks</b></span><span>Cost: <b>&lt; $1</b></span></div>
+    <p style="margin-top:10px"><strong>Goal.</strong> Four specialists become a team: one goal in, four tasks out, work passed without loss.</p>
+    <ul class="check">
+      <li>Orchestrator agent: reads the goal, splits it into the four tasks, assigns them, validates every handoff before the next agent acts, and decides when a human is needed.</li>
+      <li>Agents run as separate Strands agents; task requests travel over A2A (in-process in this phase, same message schema as HTTP).</li>
+      <li>Handoff package validated on receipt: a handoff missing <code>evidence</code> or <code>do_not_touch</code> is rejected and the run stops cleanly with an error, not a guess.</li>
+      <li>End-to-end run with no human involvement except the approval step.</li>
+    </ul>
+    <p><strong>Definition of done.</strong> The seeded incident runs from alert to verified fix with the Orchestrator delegating and the four agents handing off, and the full 22-step sequence (Figure 4) replays end to end. A malformed handoff is rejected by validation. Removing any one agent makes its phase's test fail — proving each agent is load-bearing.</p>
+  </div>
+
+  <div class="phase">
+    <h3>Phase 7 — Observability, protocols, model comparison (3 weeks) · Terms 19, 20</h3>
+    <div class="meta"><span>Entry: <b>Phase 6 gate passed</b></span><span>Time: <b>3 weeks</b></span><span>Cost: <b>$1–2</b></span></div>
+    <p style="margin-top:10px"><strong>Goal.</strong> The system can explain itself after the fact, its parts are swappable, and the model choice is a measured decision instead of a preference.</p>
+    <ul class="check">
+      <li>OpenTelemetry traces from the runtime to X-Ray; one trace per incident, replayable: who acted, which tool, what came back.</li>
+      <li>CloudWatch dashboard: runs, failures, approvals, blocks, eval scores over time.</li>
+      <li>Protocol test: the Fixer is replaced with a differently-built agent behind the same MCP/A2A contracts; nothing else changes and the evals still pass.</li>
+      <li>Model comparison: the 20-case eval set run on Nova Micro and on Claude Haiku; cost per run and score published side by side in the README.</li>
+    </ul>
+    <p><strong>Definition of done.</strong> A reviewer can open one trace and reconstruct the whole incident. The swapped Fixer passes evals. The model comparison table exists with real numbers, and the default model (ADR-002) is either confirmed or changed by a new ADR.</p>
+  </div>
+
+  <div class="phase">
+    <h3>Phase 8 — Hardening, RDS demo, portfolio packaging (2 weeks) · Terms: all (evidence)</h3>
+    <div class="meta"><span>Entry: <b>Phase 7 gate passed</b></span><span>Time: <b>2 weeks</b></span><span>Cost: <b>~$1–2 + one RDS day (~$0.50)</b></span></div>
+    <p style="margin-top:10px"><strong>Goal.</strong> The thing a stranger can judge. Code, docs, demo, and cost proof — then the cloud is turned off.</p>
+    <ul class="check">
+      <li>Cloud deployment: the pipeline job, agent runtime, MCP tool servers, approve endpoint and publisher Lambda deploy via the GitHub workflow (ADR-010) and the demo run executes end to end in the cloud — the same code that ran on the Mac in Phases 1–7.</li>
+      <li>RDS deploy (CloudFormation), data load, one recorded end-to-end demo run, then RDS deleted the same day (with a snapshot); the deletion is verified in the console and the cost noted.</li>
+      <li>README: what it is, the architecture diagram, how to run it locally in 15 minutes, the cost table, the eval results, the model comparison.</li>
+      <li>Demo: screen recording of the seeded incident fixing itself, plus screenshots of the trace and the dashboard.</li>
+      <li>Repo hygiene: no secrets, no dead code, CI green, ADRs up to date, <code>aws cloudformation delete-stack</code> removes everything.</li>
+      <li>Retrospective (one page): what broke, what was re-decided, what you would do differently — the most believable part of any portfolio.</li>
+    </ul>
+    <p><strong>Definition of done.</strong> A stranger can clone the repo, follow the README, and run the incident locally. The demo recording exists. RDS is deleted (snapshot kept) and the final month's AWS bill is ≤ $10 with a screenshot to prove it. The plan's retrospective is written.</p>
+  </div>
+</section>
+
+<section aria-labelledby="cost-h">
+  <div>
+    <p class="kicker">10 &middot; Cost model</p>
+    <h2 id="cost-h">What it costs, month by month</h2>
+  </div>
+  <p class="prose">Assumptions: one incident replay a week plus development runs — roughly 200 agent runs a month, ~2,000 Bedrock calls, a few hundred thousand tokens; S3 under 1 GB; logs under 1 GB. Sydney region pricing. “Free allowance” means the always-free tier, which applies to paid accounts too.</p>
+  <div class="tablewrap"><table class="rows">
+    <tr><th>Service</th><th>Use in this plan</th><th>Free allowance</th><th>Expected cost / month</th></tr>
+    <tr><td>Lambda</td><td>Ingest, transform, tools, agent runtime</td><td>1M requests + 400,000 GB-sec</td><td class="mono">$0</td></tr>
+    <tr><td>DynamoDB</td><td><code>apa-memory</code> + <code>apa-approvals</code>, on-demand</td><td>25 GB + read/write request units</td><td class="mono">$0</td></tr>
+    <tr><td>S3</td><td>Raw files (&lt; 1 GB), static dashboard</td><td>— (12-month tier may be expired)</td><td class="mono">~$0.05</td></tr>
+    <tr><td>Step Functions</td><td>Pipeline state machine</td><td>4,000 state transitions / month</td><td class="mono">$0</td></tr>
+    <tr><td>EventBridge Scheduler</td><td>Nightly trigger</td><td>Generous free tier</td><td class="mono">$0</td></tr>
+    <tr><td>SNS</td><td>Approval emails</td><td>1,000 emails / month free tier</td><td class="mono">$0</td></tr>
+    <tr><td>CloudWatch + X-Ray</td><td>Logs, metrics, traces</td><td>5 GB logs, 100k traces (X-Ray free tier)</td><td class="mono">$0–0.50</td></tr>
+    <tr><td>CloudFront</td><td>Dashboard CDN</td><td>1 TB transfer + 10M requests</td><td class="mono">$0</td></tr>
+    <tr><td>Bedrock — Nova Micro</td><td>Agent reasoning, ~200 runs / month</td><td>None — pay per token</td><td class="mono">$0.50–2</td></tr>
+    <tr><td>Bedrock — Titan embeddings</td><td>Runbook chunks (one-off + rare re-index)</td><td>None — pay per token</td><td class="mono">&lt; $0.10</td></tr>
+    <tr><td>RDS db.t3.micro</td><td>Phase 8 demo only, ~1 day, then deleted (with snapshot)</td><td>Assumed expired (verify Phase 0)</td><td class="mono">~$0.50 (one day)</td></tr>
+    <tr><td><strong>Total while building (Phases 0–7)</strong></td><td></td><td></td><td class="mono"><strong>$1–3 / month</strong></td></tr>
+    <tr><td><strong>Phase 8 month (incl. RDS demo day)</strong></td><td></td><td></td><td class="mono"><strong>$2–4</strong></td></tr>
+  </table></div>
+  <p class="prose" style="margin-top:12px">VPC note: the Mac-local topology (ADR-004) avoids VPC costs in Phases 1–7 — there is no NAT gateway and no VPC endpoints to pay for. If a future phase moved the database to the cloud, Lambdas in a VPC would need NAT (~$30/month) or VPC endpoints to reach Bedrock and SNS; that cost is <strong>not</strong> in this model, and it is the reason the database stays on the Mac until Phase 8.</p>
+  <div class="callout warn" style="margin-top:14px">
+    <span class="kicker">The number that would break the budget</span>
+    <p style="margin-top:6px">RDS db.t3.micro left running 24/7: ~$13–15/month on its own. That is why ADR-004 exists and why Phase 8 deletes the instance the same day (a stopped instance auto-restarts after 7 days). If you ever see a monthly bill above $5 outside Phase 8, the first thing to check is a running RDS instance, and the second is CloudWatch log retention — set retention to 7 days in the CloudFormation template, not “never expire”.</p>
+  </div>
+</section>
+
+<section aria-labelledby="risk-h">
+  <div>
+    <p class="kicker">11 &middot; Risks, testing, portfolio packaging</p>
+    <h2 id="risk-h">What could go wrong, how we will know, and what “show” looks like</h2>
+  </div>
+  <h3>Risks</h3>
+  <div class="tablewrap"><table class="rows">
+    <tr><th>Risk</th><th>Likelihood / impact</th><th>Mitigation (in the plan, not hoped for)</th></tr>
+    <tr><td>2–3 hrs/week slips; a phase drags</td><td>High / medium</td><td>Phases are 1–4 weeks and end in something working; a phase that cannot finish in its window is split, not stretched. The 20-week total already assumes the slow pace.</td></tr>
+    <tr><td>Bedrock model not enabled / not available in Sydney</td><td>Medium / high</td><td>Phase 0 spike answers this before any building. Fallback named in ADR-002: Haiku, then a different region for learning only.</td></tr>
+    <tr><td>Nova Micro fails the tool-calling evals</td><td>Medium / medium</td><td>Phase 5 pass mark is explicit (20-case set ≥ 17/20, §11); failure triggers the ADR-002 revisit (Haiku default) with a re-priced cost model.</td></tr>
+    <tr><td>Scope creep: “just add one more agent”</td><td>High / medium</td><td>The 20 terms are the scope. Anything else goes in a “later” list in the README, not in a phase.</td></tr>
+    <tr><td>RDS left running; bill surprises</td><td>Medium / high</td><td>Budget alarms in Phase 0; RDS exists only in Phase 8 and is deleted the same day (with a snapshot); log retention 7 days.</td></tr>
+    <tr><td>Prompt-only safety (agent “promises” not to do something)</td><td>Medium / high</td><td>Every safety rule is enforced in code as well as in the prompt — guardrail hook, tool-server approval check, per-agent Postgres role. IAM roles do not control Postgres writes. Phase 4 tests the negative paths.</td></tr>
+    <tr><td>Portfolio repo is unreadable to a stranger</td><td>Medium / medium</td><td>Phase 8 definition of done includes the stranger test; README and demo are deliverables, not afterthoughts.</td></tr>
+  </table></div>
+
+  <h3>Testing strategy (one paragraph, no hand-waving)</h3>
+  <div class="prose">
+    <p>Three layers. <strong>Unit tests</strong> (pytest) for the context builder, the handoff validator, the guardrail hook, and the check functions — these run in milliseconds and in CI on every push. <strong>Integration tests</strong> run the tools against the local Docker Postgres and the seeded incident — these run before a phase is called done. <strong>Evals</strong> (ADR-008) are the 20-case set scored on every change; they are the only test that judges agent behaviour, and they are the gate between phases. No layer substitutes for another: a green unit suite with failing evals means the code is correct and the system is wrong.</p>
+    <p><strong>Eval pass mark (§11).</strong> The 20-case eval set must score ≥ 17/20 (85%) on every run, and the 4 checks must pass 4/4 on a fixed table (test copy and live). A change that drops the eval score below 17/20, or breaks a check, does not merge — the evals are the gate between phases (ADR-008). If Nova Micro cannot reach the pass mark, ADR-002 is revisited (Haiku default) and the cost model is re-priced.</p>
+  </div>
+
+  <h3>Portfolio packaging checklist (Phase 8, done means all of these)</h3>
+  <ul class="check prose">
+    <li>README a stranger can follow: what it is, the C4 diagrams, 15-minute local run, cost table, eval results, model comparison.</li>
+    <li><code>docs/adr/</code> with ADR-001…011 all at Accepted status (ADR-011 accepted with this plan), plus any new ADRs written along the way.</li>
+    <li>Demo recording: the seeded incident from failure to verified fix, with the approval email and the trace visible.</li>
+    <li>Cost proof: a screenshot of the month's AWS bill at or under $10, and the budget alarms visible.</li>
+    <li>CI green on the final commit; <code>aws cloudformation delete-stack</code> removes every AWS resource; no secrets anywhere in the repo (verified with a secret scan).</li>
+    <li>One-page retrospective: what broke, what was re-decided, what you would do differently.</li>
+  </ul>
+
+  <h3>Repository layout (target state)</h3>
+  <pre>aws-data-platform/                 # existing repo — deployment already working
+├── .github/workflows/
+│   ├── deploy.yml            # existing: dev → prod (OIDC)
+│   ├── deploy-environment.yml
+│   └── pr-validate.yml       # existing: cfn-lint + policy scan (+ tests/evals added)
+├── bootstrap/
+│   ├── management/guardrails.yml
+│   └── workload/pipeline-identity.yml   # OIDC identity for the pipeline
+├── stacks/
+│   └── agentic-pipeline-assurance/   # the Python project lives here, not the repo root
+│       ├── template.yaml     # CloudFormation: S3, Lambdas (incl. approve endpoint + publisher), Step Functions, DynamoDB (apa-memory + apa-approvals), SNS
+│       ├── pyproject.toml    # dependencies (uv)
+│       ├── uv.lock           # pinned, committed
+│       ├── .python-version   # 3.12
+│       ├── docker-compose.yml  # local Postgres + pgvector
+│       ├── src/
+│       │   ├── pipeline/     # seeder, ingest, transform, publisher
+│       │   ├── agents/       # orchestrator, detector, diagnoser, fixer, verifier
+│       │   ├── tools/        # FastMCP servers: logs, schema, runbook, checks, swap
+│       │   └── shared/       # context builder, handoff schema, guardrails, memory, tracing
+│       ├── tests/            # unit + integration
+│       ├── evals/            # the 20-case set + scoring script
+│       ├── dashboard/        # static site (walkthrough result section, live data)
+│       └── scripts/
+│           ├── build.sh      # uv export → install → zip → upload to S3 for CloudFormation
+│           ├── seed_incident.py  # inject the column rename
+│           └── demo_record.sh    # the Phase 8 demo run
+└── docs/
+    ├── adr/                  # ADR-001 … ADR-011
+    └── plan.html             # this plan, kept with the repo</pre>
+</section>
+
+
+<section aria-labelledby="decide-h">  <div>
+    <p class="kicker">12 &middot; Decisions needed from you</p>
+    <h2 id="decide-h">Approve, challenge, or change — before any code</h2>
+  </div>
+  <div class="prose">
+    <p><strong>1. Approve this plan as written?</strong> If yes, Phase 0 is the next step — the learning guide walks through it. If no, tell me which ADR or phase you disagree with — the ADRs are written to be argued with.</p>
+    <p><strong>2. The 20-week timeline.</strong> Five months at 2–3 hours a week. If that feels too long, the honest options are: cut scope (say which terms become stretch), or add hours — not “go faster”.</p>
+    <p><strong>3. The Mac-local topology (ADR-004).</strong> Phases 1–7 run on the Mac (Docker Postgres), RDS only for the one-day demo, deleted (with a snapshot) the same day. If you would rather have RDS from the start and accept ~$13–15/month (plus VPC costs), say so and I will re-price §10 and ADR-004 instead of pretending the budget still holds.</p>
+    <p><strong>4. Public or private repo?</strong> Answered: the project lives in the existing public repo <code>kazinayeem-eng/aws-data-platform</code>, whose deployment pipeline already works. It must contain zero AWS credentials and zero real data — the secret scan in CI guards that from day one.</p>
+  </div>
+</section>
+
+<footer>
+  <p class="kicker">Agentic Pipeline Assurance — Build Plan v2.0 — 20 Nov 2026</p>
+  <p style="margin-top:8px;font-size:14px;color:var(--muted)">Sources that shaped the structure: the C4 model (context → containers → components, with a legend and a labelled arrow on every line) and the Nygard ADR format (context, decision, alternatives, consequences, one decision per record). The system itself is the <em>Agentic AI Pipeline Walkthrough</em> — all 20 terms, in tour order, are mapped in §7.</p>
+</footer>
+
+</div>
+</body></html>

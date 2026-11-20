@@ -1,0 +1,810 @@
+<!doctype html><html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Agentic Pipeline Assurance — Learning Guide</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Patrick+Hand&family=Permanent+Marker&display=swap">
+<style>
+:root{
+  --bg:#EEF0EE; --board:#FCFCF9; --sys:#E8ECEE; --ink:#1D2433; --muted:#566170; --line:#CDD2D6;
+  --agent:#2457C5; --agent-soft:#DCE7FB; --ok:#17803F; --ok-soft:#D8F0E1;
+  --bad:#CC3326; --bad-soft:#FADFDA; --warn:#8F5B00; --warn-soft:#FBEBC8;
+  --note:#FFE680; --note-ink:#2E2800;
+  --font-display:'Permanent Marker','Marker Felt','Comic Sans MS',cursive;
+  --font-hand:'Patrick Hand','Segoe Print','Comic Sans MS',cursive;
+  --font-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1714; --board:#15231E; --sys:#1F3029; --ink:#EDEFE8; --muted:#A6B5AD; --line:#2E4239;
+    --agent:#8DBBFF; --agent-soft:#1B3050; --ok:#7EE0A0; --ok-soft:#16392A;
+    --bad:#FF8D7B; --bad-soft:#4A211B; --warn:#EBB24D; --warn-soft:#382B0D;
+    --note:#F2D96B; --note-ink:#2A2300; color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--font-body);padding:28px max(16px,env(safe-area-inset-left,0px)) 48px max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1020px;margin:0 auto;display:grid;gap:44px}
+h1,h2,h3,p,ol,ul,dl,dd,table{margin:0}
+ul,ol{padding:0;list-style:none}
+.kicker{font:500 12px/1.3 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font:400 clamp(30px,5vw,46px)/1.1 var(--font-display);text-wrap:balance;margin-top:10px}
+h2{font:400 clamp(22px,3.4vw,30px)/1.2 var(--font-display);text-wrap:balance;margin-top:8px}
+h3{font:600 17px/1.3 var(--font-body);margin-top:20px}
+.lede{margin-top:16px;max-width:66ch;font-size:17px}
+.prose{max-width:68ch}
+.prose p+p{margin-top:12px}
+.prose li{margin-top:8px;padding-left:18px;position:relative}
+.prose li::before{content:"—";position:absolute;left:0;color:var(--muted)}
+section{display:grid;gap:16px}
+.sk{border:1.5px solid var(--ink);border-radius:14px 5px 12px 6px/6px 12px 5px 14px;background:var(--board)}
+.box{padding:18px clamp(14px,3vw,24px)}
+.box p+p{margin-top:10px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:14px;font:500 13px/1.5 var(--font-mono);color:var(--muted)}
+.meta b{color:var(--ink)}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--warn-soft);color:var(--warn);font:500 12px/1.4 var(--font-mono)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.agent{background:var(--agent-soft);color:var(--agent)}
+.callout{padding:14px 16px;border:1.5px dashed var(--agent);border-radius:8px}
+.callout.warn{border-color:var(--warn)}
+.callout.bad{border-color:var(--bad)}
+.callout.ok{border-color:var(--ok)}
+.callout .kicker{color:var(--agent)}
+.callout.warn .kicker{color:var(--warn)}
+.callout.bad .kicker{color:var(--bad)}
+.callout.ok .kicker{color:var(--ok)}
+table.rows{border-collapse:collapse;width:100%;font-size:14px}
+table.rows th{text-align:left;font:500 12px/1.4 var(--font-mono);color:var(--muted);padding:8px 10px;border-bottom:1.5px solid var(--ink)}
+table.rows td{padding:9px 10px;vertical-align:top;border-bottom:1px solid var(--line)}
+table.rows td.mono,td.mono{font:400 13px/1.5 var(--font-mono)}
+.tablewrap{overflow-x:auto;background:var(--board);border:1.5px solid var(--ink);border-radius:8px;padding:4px 6px}
+pre{margin:6px 0 0;padding:12px 14px;background:var(--sys);border-radius:8px;font:400 12.5px/1.6 var(--font-mono);white-space:pre-wrap;overflow-wrap:anywhere}
+code{font:400 .92em var(--font-mono)}
+.fig{background:var(--board);border:2px solid var(--ink);border-radius:8px 16px 8px 14px/14px 8px 16px 8px;padding:14px 6px 6px;overflow-x:auto}
+.fig svg{display:block;min-width:640px;width:100%;height:auto}
+.figcap{padding:10px 14px 12px;font-size:14px;color:var(--muted)}
+.figcap b{color:var(--ink)}
+.toc a{color:var(--agent);text-decoration:none}
+.toc li{margin-top:6px}
+.phase{border:1.5px solid var(--ink);border-radius:14px 5px 12px 6px/6px 12px 5px 14px;background:var(--board);padding:18px clamp(14px,3vw,24px)}
+.phase h3{margin-top:0}
+.phase .meta{margin-top:8px}
+.check li{margin-top:8px;padding-left:26px;position:relative}
+.check li::before{content:"☐";position:absolute;left:0;color:var(--muted)}
+.step{border-left:3px solid var(--agent);padding:2px 0 2px 16px;margin-top:18px}
+.step h4{font:600 15.5px/1.35 var(--font-body);margin:0}
+.step h4 .n{display:inline-block;min-width:26px;height:26px;line-height:26px;text-align:center;border-radius:50%;background:var(--agent);color:#fff;font:600 13px/26px var(--font-mono);margin-right:8px}
+.step p{margin-top:8px;max-width:68ch}
+.step pre{margin-top:10px}
+.why{margin-top:10px;padding:10px 14px;border:1.5px dashed var(--agent);border-radius:8px;background:var(--agent-soft)}
+.why .kicker{color:var(--agent)}
+.why p{margin-top:6px;font-size:14.5px}
+.expect{margin-top:10px;padding:10px 14px;border:1.5px dashed var(--ok);border-radius:8px;background:var(--ok-soft)}
+.expect .kicker{color:var(--ok)}
+.expect p{margin-top:6px;font-size:14.5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{display:inline-block;padding:2px 10px;border-radius:999px;background:var(--sys);color:var(--muted);font:500 12px/1.7 var(--font-mono)}
+.chip.learn{background:var(--agent-soft);color:var(--agent)}
+@media (max-width:760px){.meta{gap:6px 14px}}
+</style>
+</head><body>
+<div class="wrap">
+
+<header>
+  <p class="kicker">Learning guide &middot; Companion to the Build Plan v2.0 &middot; 11 ADRs</p>
+  <h1>Agentic Pipeline Assurance: learn it by building it</h1>
+  <p class="lede">A step-by-step guide for one learner, working 2–3 hours a week on a Mac. Every phase tells you <strong>what to do</strong>, <strong>why you are doing it</strong>, and <strong>how to know it worked</strong> — so you understand the system you are building, not just copy it. Nothing here builds anything for you. You type every command.</p>
+  <div class="meta">
+    <span>Version <b>v2.0</b></span>
+    <span>Date <b>20 Nov 2026</b></span>
+    <span>Status <b><span class="pill">PLAN v2.0 DRAFT — GUIDE READY</span></b></span>
+    <span>Owner <b>Kazi</b></span>
+    <span>Region <b>ap-southeast-2 (Sydney)</b></span>
+    <span>Budget ceiling <b>US $10 / month</b></span>
+  </div>
+</header>
+
+<section aria-labelledby="how-h">
+  <div>
+    <p class="kicker">Read this first</p>
+    <h2 id="how-h">How to use this guide</h2>
+  </div>
+  <div class="prose">
+    <p>This guide is the <em>how</em>. The <a href="Agentic_AI_Pipeline_Plan.html">Build Plan</a> is the <em>what and why</em> — the architecture, the decisions, the cost model. Keep both open. When this guide says “see ADR-004”, it means the decision record in §8 of the plan; read it before you act on it.</p>
+    <p><strong>The learning loop, every sitting:</strong> (1) read the phase's “idea” first, so you know what you are about to learn; (2) do one step at a time, in order; (3) check the “you should see” box before moving on — if it doesn't match, stop and fix it there, because every later step assumes the earlier one worked; (4) at the end of the phase, run the “check yourself” list. A phase is done when its checks pass, not when you feel done.</p>
+    <p><strong>One sitting, one visible result.</strong> At 2–3 hours a week, a phase is 2–6 sittings. If a sitting ends with nothing working, the step is too big — split it. Getting stuck is part of the learning; the “watch out” box in each phase names the traps people actually hit.</p>
+    <p><strong>Conventions.</strong> Commands you type start with <code>$</code> and run in your Mac terminal (zsh), inside the repo unless stated otherwise. <code>ap-southeast-2</code> is the region everywhere — if a console page shows another region, switch it before you click anything. Never paste AWS keys, passwords, or tokens into the repo, a chat, or a screenshot.</p>
+  </div>
+  <div class="callout">
+    <span class="kicker">The one rule that matters most</span>
+    <p style="margin-top:6px">Never let an agent — or a guide — do something you can't explain back in one sentence. If a step works but you don't know why, stop and re-read the “why” box. The portfolio is the understanding, not the repo.</p>
+  </div>
+</section>
+
+<section aria-labelledby="map-h">
+  <div>
+    <p class="kicker">The whole journey on one page</p>
+    <h2 id="map-h">Nine phases, and what each one teaches you</h2>
+  </div>
+  <div class="fig">
+    <svg viewBox="0 0 980 470" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans,sans-serif">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#566170"/></marker></defs>
+      <g font-size="13" fill="#1D2433">
+        <rect x="20" y="20" width="290" height="86" rx="10" fill="#DCE7FB" stroke="#2457C5" stroke-width="1.5"/>
+        <text x="36" y="48" font-weight="600">Phase 0 — Foundations · 1 wk</text>
+        <text x="36" y="70" font-size="12" fill="#566170">Tools, repo, budget alarms,</text>
+        <text x="36" y="88" font-size="12" fill="#566170">two spikes, hello-world deploy</text>
+        <rect x="345" y="20" width="290" height="86" rx="10" fill="#FCFCF9" stroke="#1D2433" stroke-width="1.5"/>
+        <text x="361" y="48" font-weight="600">Phase 1 — Pipeline, no agents · 2 wk</text>
+        <text x="361" y="70" font-size="12" fill="#566170">S3, Lambda, Step Functions,</text>
+        <text x="361" y="88" font-size="12" fill="#566170">the failing load, first dashboard</text>
+        <rect x="670" y="20" width="290" height="86" rx="10" fill="#FCFCF9" stroke="#1D2433" stroke-width="1.5"/>
+        <text x="686" y="48" font-weight="600">Phase 2 — First agent · 2 wk</text>
+        <text x="686" y="70" font-size="12" fill="#566170">MCP tools, the agent loop,</text>
+        <text x="686" y="88" font-size="12" fill="#566170">context engineering (the brief)</text>
+        <rect x="20" y="150" width="290" height="86" rx="10" fill="#FCFCF9" stroke="#1D2433" stroke-width="1.5"/>
+        <text x="36" y="178" font-weight="600">Phase 3 — Diagnoser · 2 wk</text>
+        <text x="36" y="200" font-size="12" fill="#566170">RAG with pgvector, DynamoDB</text>
+        <text x="36" y="218" font-size="12" fill="#566170">memory, grounding every claim</text>
+        <rect x="345" y="150" width="290" height="86" rx="10" fill="#FCFCF9" stroke="#1D2433" stroke-width="1.5"/>
+        <text x="361" y="178" font-weight="600">Phase 4 — Fixer: safety · 4 wk</text>
+        <text x="361" y="200" font-size="12" fill="#566170">Sandbox, guardrails, policy, identity,</text>
+        <text x="361" y="218" font-size="12" fill="#566170">human approval — the portfolio phase</text>
+        <rect x="670" y="150" width="290" height="86" rx="10" fill="#FCFCF9" stroke="#1D2433" stroke-width="1.5"/>
+        <text x="686" y="178" font-weight="600">Phase 5 — Verifier &amp; evals · 2 wk</text>
+        <text x="686" y="200" font-size="12" fill="#566170">The 4 checks, the 20-case eval set,</text>
+        <text x="686" y="218" font-size="12" fill="#566170">CI running them on every push</text>
+        <rect x="20" y="280" width="290" height="86" rx="10" fill="#FCFCF9" stroke="#1D2433" stroke-width="1.5"/>
+        <text x="36" y="308" font-weight="600">Phase 6 — Orchestrator · 2 wk</text>
+        <text x="36" y="330" font-size="12" fill="#566170">Multi-agent, A2A messages,</text>
+        <text x="36" y="348" font-size="12" fill="#566170">validated handoffs</text>
+        <rect x="345" y="280" width="290" height="86" rx="10" fill="#FCFCF9" stroke="#1D2433" stroke-width="1.5"/>
+        <text x="361" y="308" font-weight="600">Phase 7 — Observability · 3 wk</text>
+        <text x="361" y="330" font-size="12" fill="#566170">Traces, dashboards, swappable</text>
+        <text x="361" y="348" font-size="12" fill="#566170">agents, Nova vs Haiku measured</text>
+        <rect x="670" y="280" width="290" height="86" rx="10" fill="#D8F0E1" stroke="#17803F" stroke-width="1.5"/>
+        <text x="686" y="308" font-weight="600">Phase 8 — Ship it · 2 wk</text>
+        <text x="686" y="330" font-size="12" fill="#566170">RDS demo day, README, demo</text>
+        <text x="686" y="348" font-size="12" fill="#566170">video, retrospective, switch off</text>
+        <line x1="310" y1="63" x2="343" y2="63" stroke="#566170" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="635" y1="63" x2="668" y2="63" stroke="#566170" stroke-width="1.5" marker-end="url(#ar)"/>
+        <path d="M815 106 L815 128 L175 128 L175 148" fill="none" stroke="#566170" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="310" y1="193" x2="343" y2="193" stroke="#566170" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="635" y1="193" x2="668" y2="193" stroke="#566170" stroke-width="1.5" marker-end="url(#ar)"/>
+        <path d="M815 236 L815 258 L175 258 L175 278" fill="none" stroke="#566170" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="310" y1="323" x2="343" y2="323" stroke="#566170" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="635" y1="323" x2="668" y2="323" stroke="#566170" stroke-width="1.5" marker-end="url(#ar)"/>
+      </g>
+      <text x="20" y="420" font-size="13" fill="#566170">Read left to right, top to bottom. Each phase's gate is the entry ticket for the next — never skip one, even if it feels slow.</text>
+      <text x="20" y="444" font-size="13" fill="#566170">Total: 20 weeks at 2–3 hours a week. Phase 4 is the longest (4 weeks) because safety is the skill the portfolio is really about.</text>
+    </svg>
+  </div>
+  <div class="callout warn">
+    <span class="kicker">Before you start — the plan is saved</span>
+    <p style="margin-top:6px">The Build Plan v2.0 is saved at <code>workspace/user/files/Agentic_AI_Pipeline_Plan.html</code> — 11 ADRs (ADR-011 draft until the plan is approved), no SAM, CloudFormation + GitHub Actions, project in the existing public repo <code>kazinayeem-eng/aws-data-platform</code>. This guide lives beside it as <code>Agentic_AI_Pipeline_Learning_Guide.html</code>. Keep both; the plan is the map, this is the route.</p>
+  </div>
+</section>
+
+<section aria-labelledby="p0-h">
+  <div>
+    <p class="kicker">Phase 0 &middot; 1 week &middot; $0</p>
+    <h2 id="p0-h">Foundations: your machine, your account, your repo</h2>
+  </div>
+  <div class="phase">
+    <h3>The idea</h3>
+    <p class="prose" style="margin-top:8px">Before any agent code, you need three things to be true: your Mac can build and run Python reliably, your AWS account is safe to experiment in, and the two genuine unknowns are answered. The unknowns are: (1) does your paid account still hold any RDS free-tier hours, and (2) can you actually call Bedrock models in Sydney. Everything later assumes both answers are written down.</p>
+    <div class="chips"><span class="chip learn">You will learn</span><span class="chip">uv &amp; lockfiles</span><span class="chip">Python environments</span><span class="chip">AWS Budgets</span><span class="chip">Bedrock model access</span><span class="chip">OIDC (read-only)</span><span class="chip">CloudFormation deploy</span></div>
+
+    <div class="step"><h4><span class="n">1</span>Install uv, the Python tool</h4>
+      <p>uv is one small program that replaces three things you may have met before: <code>pip</code> (installing packages), <code>venv</code> (making isolated environments), and <code>pyenv</code> (installing Python itself). One tool means one place for things to go wrong, and it is roughly 10–100× faster than pip — which matters when you reinstall often while learning.</p>
+      <p><strong>Check first:</strong> run <code>uv --version</code>. If it prints a version number, uv is already installed — skip this step entirely. Only install it if the terminal says “command not found”.</p>
+      <pre>$ curl -LsSf https://astral.sh/uv/install.sh | sh
+$ uv --version    # expect something like: uv 0.5.x or newer</pre>
+      <div class="why"><span class="kicker">Why uv, not pip + venv</span><p>pip installs whatever is newest today, so “it worked on my machine” breaks on someone else's. uv writes a <code>uv.lock</code> file pinning every package to an exact version, and that file is committed to the repo — anyone cloning the repo gets the identical environment. For a portfolio, that reproducibility is the point.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p><code>uv --version</code> prints a version number. If the terminal says “command not found”, close and reopen the terminal (the installer adds uv to your PATH) and try again.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">2</span>Install Python 3.12 and pin it</h4>
+      <p>Python 3.12 is the version the whole project targets. <strong>Check first</strong> with <code>uv python list</code>: if 3.12 is already there, skip the install and just pin it. “Pin” means the repo records the version, so nobody accidentally runs it on 3.13 and finds a library behaves differently.</p>
+      <pre>$ uv python install 3.12
+$ uv python pin 3.12     # run inside stacks/agentic-pipeline-assurance/ later; writes .python-version</pre>
+      <div class="why"><span class="kicker">Why pin a version</span><p>Python libraries change behaviour between versions. Pinning removes an entire class of “works for me” bugs before they can happen, and it costs one command.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">3</span>Clone your repo and create the project skeleton</h4>
+      <p>Your deployment pipeline already works in <code>kazinayeem-eng/aws-data-platform</code> — OIDC identity, a dev → prod deploy workflow, and PR validation with cfn-lint. The project is a new stack inside that repo, not a new repo. <strong>Check first:</strong> run <code>git --version</code>. If it prints a version, git is ready. If it says “command not found”, install the Xcode Command Line Tools first with <code>xcode-select --install</code>.</p>
+      <p>Before cloning, look at the repo first: open <code>bootstrap/workload/pipeline-identity.yml</code> and <code>.github/workflows/deploy.yml</code> and read them. You don't need to understand every line yet — just notice that the workflow authenticates with <code>id-token: write</code> (that's OIDC: GitHub asks AWS for a short-lived credential instead of storing a permanent key) and that templates live under <code>stacks/**/template.yaml</code>.</p>
+      <p>The Python project lives <strong>inside the stack directory</strong> — <code>stacks/agentic-pipeline-assurance/</code> — not at the repo root. That is where <code>pyproject.toml</code> and <code>uv.lock</code> belong (plan §9, Phase 0). So create the skeleton there, and run <code>uv init</code> from inside it. Note that <code>uv init</code> also creates a stray <code>main.py</code> you don't need — delete it. From here on, run the Python commands (<code>uv run</code>, <code>pytest</code>) from inside <code>stacks/agentic-pipeline-assurance/</code> — that is the project root. The CloudFormation template lives there too (<code>template.yaml</code>); <code>docs/adr/</code> lives at the repo root.</p>
+      <pre>$ git clone https://github.com/kazinayeem-eng/aws-data-platform.git
+$ cd aws-data-platform
+$ mkdir -p stacks/agentic-pipeline-assurance docs/adr
+$ cd stacks/agentic-pipeline-assurance
+$ mkdir -p src/pipeline src/agents src/tools src/shared tests evals dashboard scripts
+$ uv init --no-readme --name agentic-pipeline-assurance   # creates pyproject.toml (+ a stray main.py)
+$ rm main.py
+$ uv add boto3 strands-agents mcp fastmcp "psycopg[binary]" pytest pydantic "cryptography<49"
+$ uv sync        # builds the environment from the lockfile
+$ uv lock        # writes uv.lock — commit this file</pre>
+      <div class="why"><span class="kicker">Why a skeleton first</span><p>Every later phase adds files into folders that already exist. If you create folders as you go, you end up reorganising mid-project and breaking imports. The skeleton is also the first thing a reviewer sees — a clean layout signals a clean mind.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p><code>uv sync</code> finishes with no errors, and <code>ls</code> shows <code>pyproject.toml</code>, <code>uv.lock</code> and <code>.python-version</code>. Run <code>uv run python -c "import boto3, strands; print('ok')"</code> — it should print <code>ok</code>.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">4</span>Start Postgres locally with Docker — check Docker first</h4>
+      <p><strong>Check first:</strong> run <code>docker --version</code>. If it prints a version, Docker is installed — skip straight to the compose file below. If it says “command not found”, install Docker Desktop for Mac first, open it, and wait for it to say “Running” before continuing.</p>
+      <p>Postgres runs on your Mac in Docker for Phases 1–7 (ADR-004). Create <code>docker-compose.yml</code> in the stack directory (the project root, where you are now) with a Postgres 16 image and the pgvector extension, then start it. pgvector is what lets Postgres store and search embeddings in Phase 3 — you install it now so the database never changes shape later.</p>
+      <pre>$ cat &gt; docker-compose.yml &lt;&lt;'EOF'
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: apa
+      POSTGRES_PASSWORD: apa-dev-only
+      POSTGRES_DB: assurance
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+volumes: {pgdata: {}}
+EOF
+$ docker compose up -d
+$ psql "postgresql://apa:apa-dev-only@localhost:5432/assurance" -c "SELECT version();"</pre>
+      <div class="why"><span class="kicker">Why Docker, not installing Postgres on the Mac</span><p>Docker gives you a disposable database: if it breaks, you delete the container and start again in a minute, with no leftover software on your laptop. And the exact same image runs in CI, so “works locally” means something.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p><code>psql</code> prints the Postgres version. If Docker says it isn't running, open Docker Desktop first and wait for it to say “Running”.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">5</span>Set up the AWS CLI and prove who you are — check it first</h4>
+      <p><strong>Check first:</strong> run <code>aws --version</code>. If it prints a version, the CLI is already installed — go straight to configuring it. If it says “command not found”, install AWS CLI v2 for Mac first. Then configure it to use your account. Prefer SSO if your account has it; otherwise a named profile. Then run the identity check — this is the command you will run first whenever something AWS-related fails, because half of all AWS errors are “wrong account” or “wrong region”.</p>
+      <pre>$ aws --version
+$ aws configure sso   # or: aws configure --profile apa
+$ aws sts get-caller-identity --region ap-southeast-2</pre>
+      <div class="expect"><span class="kicker">You should see</span><p>Your account ID and user/role ARN. Check the account ID matches the one in your AWS console — if it doesn't, you are signed into the wrong account.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">6</span>Put the budget alarms in before any resource exists</h4>
+      <p>Go to the AWS console → Billing → Budgets → Create budget. Create two: one at $5 and one at $10, both alerting your email. Do this now, while the account is empty, because an alarm created after a runaway resource is an alarm that arrives too late. This is the cheapest insurance in the whole project.</p>
+      <div class="why"><span class="kicker">Why alarms before resources</span><p>Every cost horror story starts with “I meant to turn it off”. A $5 alarm is the tripwire that tells you something is running that shouldn't be — usually a forgotten RDS instance, which is exactly the trap this project is built around.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">7</span>Spike A — do you have any RDS free-tier hours left?</h4>
+      <p>In the console, go to Billing → Free Tier. Look for “Amazon RDS” and check the remaining hours. Write the answer in one line in <code>docs/adr/adr-004.md</code> (you'll copy the ADRs in step 9) — for example “0 hours remaining, verified 18 Nov 2026”. If hours remain, the plan changes: RDS could be used from Phase 1 at no cost. If not, the plan's local-Postgres decision is confirmed.</p>
+      <div class="why"><span class="kicker">Why this is a “spike”</span><p>A spike is a small, time-boxed investigation that answers one question before you build on top of it. The whole cost model rests on this answer, so guessing would be worse than spending 10 minutes checking.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">8</span>Spike B — find the Nova Micro ID that works in Sydney, and make one real call</h4>
+      <p>Bedrock now grants access to serverless foundation models by default — there is no per-model access request to file. (Anthropic models are the exception: they still need a one-time usage form, so file that for Claude Haiku if you plan to use it in Phase 7.) The real unknown is the <strong>model ID</strong>: Nova Micro in Sydney may need an <code>apac.</code> cross-region inference profile ID rather than the plain model ID <code>amazon.nova-micro-v1:0</code>. So test it. Try the plain ID first; if that fails, retry with the inference profile ID. Whichever one works, write it down in ADR-002 — every later phase uses that ID.</p>
+      <pre>$ aws bedrock-runtime invoke-model \
+    --model-id amazon.nova-micro-v1:0 \
+    --region ap-southeast-2 \
+    --cli-binary-format raw-in-base64-out \
+    --body '{"messages":[{"role":"user","content":[{"text":"Say hello in one word."}]}],"inferenceConfig":{"maxTokens":10}}' \
+    /tmp/bedrock-test.json
+$ cat /tmp/bedrock-test.json</pre>
+      <p>If the plain ID fails, retry with <code>--model-id apac.amazon.nova-micro-v1:0</code> (the cross-region inference profile) and record the working ID in <code>docs/adr/adr-002-bedrock-nova-micro.md</code>. The <code>--cli-binary-format raw-in-base64-out</code> flag is needed in AWS CLI v2 because the <code>--body</code> is raw JSON.</p>
+      <div class="why"><span class="kicker">Why one call now</span><p>If the model ID is wrong, you want to find out in Phase 0, when the fix is a different string — not in Phase 2, when you're debugging an agent and can't tell whether the model, the code, or the access is broken. One successful call removes that whole category of doubt.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p>The JSON file contains a short reply from Nova Micro. If you get an access error, re-check the region. If the plain model ID is rejected, try the <code>apac.</code> inference profile ID — that is the expected fix, not a failure.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">9</span>Prove the pipeline with a hello-world Lambda, then delete it</h4>
+      <p>Write a tiny CloudFormation template (<code>stacks/agentic-pipeline-assurance/template.yaml</code>) containing one Lambda that returns “hello”. Then write the packaging step the plan glosses as “no new pipeline”: <code>scripts/build.sh</code> (inside the stack directory) builds the Lambda zip from the uv lockfile — <code>uv export --format requirements-txt</code>, install into a target directory, zip it, upload the zip to S3, and pass the S3 location to CloudFormation as a parameter. Add a step to <code>deploy.yml</code> that runs <code>stacks/agentic-pipeline-assurance/scripts/build.sh</code> (from the repo root, as CI does) before the <code>aws cloudformation deploy</code> step. Push to a branch, open a pull request, watch <code>pr-validate.yml</code> run cfn-lint, merge, and watch <code>deploy.yml</code> deploy it to dev. Check the Lambda runs in the console, then delete the stack:</p>
+      <pre>$ aws cloudformation delete-stack --stack-name agentic-pipeline-assurance-dev --region ap-southeast-2
+$ aws cloudformation wait stack-delete-complete --stack-name agentic-pipeline-assurance-dev --region ap-southeast-2</pre>
+      <div class="why"><span class="kicker">Why deploy something just to delete it</span><p>This is the cheapest possible proof that the whole chain works: your code → GitHub → OIDC → CloudFormation → a running Lambda in your account. If this fails, the failure is in the plumbing, and you fix plumbing now — not in Phase 1 when you're also debugging a data pipeline. Deleting it proves the other half: that you can turn things off.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p>The stack appears in CloudFormation, the Lambda invokes successfully, and after deletion the stack is gone from the console. If the deploy fails, read the CloudFormation “Events” tab — it names the exact failing resource.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">10</span>Copy the ADRs into the repo and commit</h4>
+      <p>Copy the eleven ADRs from §8 of the plan into <code>docs/adr/</code> as eleven small Markdown files (<code>adr-001-strands.md</code> … <code>adr-011-approvals-table.md</code>), each with context, decision, alternatives, and consequences. Commit everything — skeleton, lockfile, compose file, hello-world template — and push. This commit is the foundation every later phase builds on.</p>
+      <div class="why"><span class="kicker">Why ADRs live in the repo</span><p>A reviewer who opens your repo should be able to answer “why did they choose this?” without asking you. ADRs are that answer, written when the decision was made — not reconstructed months later from memory.</p></div>
+    </div>
+
+    <h3>Check yourself — Phase 0 is done when all of these are true</h3>
+    <ul class="check">
+      <li><code>uv run python -c "import boto3, strands; print('ok')"</code> prints <code>ok</code>.</li>
+      <li>Local Postgres answers <code>psql</code> and has the pgvector extension available (<code>CREATE EXTENSION vector;</code> works).</li>
+      <li><code>aws sts get-caller-identity</code> shows the right account in ap-southeast-2.</li>
+      <li>$5 and $10 budget alarms exist in the console.</li>
+      <li>Spike A answer (RDS hours) and Spike B output (Nova Micro reply) are written down.</li>
+      <li>The hello-world Lambda deployed through the GitHub workflow and was deleted afterwards.</li>
+      <li>A second person could set up from your README alone — test this by reading it as if you knew nothing.</li>
+    </ul>
+    <div class="callout warn">
+      <span class="kicker">Watch out</span>
+      <p style="margin-top:6px">Wrong region is the #1 time-waster: always check the console region says “Sydney (ap-southeast-2)” before creating anything. Never commit <code>.env</code>, keys, or <code>aws configure</code> output. If <code>docker compose up</code> fails with a port error, something else is already using port 5432 — stop it or change the port mapping.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="p1-h">
+  <div>
+    <p class="kicker">Phase 1 &middot; 2 weeks &middot; &lt; $1</p>
+    <h2 id="p1-h">The pipeline, no agents: make the load fail properly</h2>
+  </div>
+  <div class="phase">
+    <h3>The idea</h3>
+    <p class="prose" style="margin-top:8px">Agents are useless without a system to look after. So first you build the system <em>without</em> any agent: a nightly data load (S3 → Lambda → Postgres) that works, plus a way to break it in exactly the way the walkthrough describes — a column renamed by the source system. If you can't make the failure happen on demand, you can't test whether an agent can fix it. This phase teaches you the four AWS building blocks everything else stands on.</p>
+    <div class="chips"><span class="chip learn">You will learn</span><span class="chip">S3</span><span class="chip">Lambda</span><span class="chip">Step Functions</span><span class="chip">EventBridge</span><span class="chip">ETL (extract, transform, load)</span></div>
+
+    <div class="step"><h4><span class="n">1</span>Write the seeder: 1.2M synthetic customers</h4>
+      <p>Write <code>scripts/seed_incident.py</code>. It generates fake customer rows (id, name, email, <code>cust_status</code>, signup date, orders) into your local Postgres <code>customers</code> table — about 1.2M rows over 3 years of history. Use Python's <code>random</code> and <code>faker</code> (add it with <code>uv add --dev faker</code>) rather than real data. Generate in batches of 10,000 with <code>executemany</code> or <code>COPY</code>, or it will take forever — and that's a real lesson: bulk loading is a different skill from inserting one row.</p>
+      <div class="why"><span class="kicker">Why synthetic data, and why 1.2M rows</span><p>Real customer data must never enter a learning project. Synthetic data is safe and you control it — including the incident. And 1.2M rows is big enough that slow approaches hurt, which is how you learn to care about batching; 100 rows would teach you nothing about scale.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p><code>SELECT count(*) FROM customers;</code> returns ~1,200,000, and <code>SELECT min(signup_date), max(signup_date) FROM customers;</code> spans about 3 years.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">2</span>Add the S3 bucket to the template</h4>
+      <p>In <code>stacks/agentic-pipeline-assurance/template.yaml</code>, add an S3 bucket for the nightly CSV files, with a lifecycle rule that deletes objects after 7 days. S3 is where the “source system” drops its file every night. The 7-day rule is deliberate: raw files are transient, and storage you forget about is money you forget about.</p>
+      <div class="why"><span class="kicker">Why S3, not a database, for the incoming file</span><p>S3 is the universal inbox of AWS: anything can write a file there, it's effectively unlimited, and it costs almost nothing at this scale. Pipelines start with a file landing somewhere — S3 is that somewhere.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">3</span>Write the ingest Lambda (S3 → Postgres)</h4>
+      <p>Write <code>src/pipeline/ingest.py</code>: a handler that Step Functions invokes (see step 5) — it downloads the CSV from S3 and loads it into a staging table. There is no S3 event trigger on ingest; the load is driven by the Step Functions state machine on its schedule. Keep it small — one function, one job. It should log how many rows it read. Test it locally first with <code>uv run python -m src.pipeline.ingest</code> against a local CSV file, before it ever touches AWS. Local-first testing is a habit that will save you hours in every later phase.</p>
+      <div class="why"><span class="kicker">Why Lambda, and why one job per function</span><p>Lambda runs your code when something happens and charges only while it runs — perfect for a job that happens once a night. One job per function means when ingest breaks, transform still works, and you can test each piece alone. A function that does everything is a function you can't debug.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">4</span>Write the transform Lambda (staging → live table)</h4>
+      <p>Write <code>src/pipeline/transform.py</code>: it reads the staging table, applies the current column mapping, and writes to <code>customers</code>. The files are nightly deltas and live keeps the contract column <code>cust_status</code>, so the mapping (v1) is <code>cust_status</code> → <code>cust_status</code>. It must fail loudly — raise an exception with the column name in the message — if an expected column is missing. That failure message is what the Detector will read in Phase 2, so make it precise: “column cust_status not found in staging; found: customer_status”.</p>
+      <div class="why"><span class="kicker">Why fail loudly</span><p>A transform that silently skips bad rows produces a table that <em>looks</em> fine and is wrong — the worst kind of bug. Failing loudly, with the exact column names, is what makes the system diagnosable. Good errors are a feature.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">5</span>Wire it together with Step Functions and EventBridge</h4>
+      <p>Step Functions is the state machine: Ingest → Transform → Success, with a failure branch on any error. Write it as JSON in the CloudFormation template (the <code>AWS::StepFunctions::StateMachine</code> resource). Then add an EventBridge Scheduler rule for 02:00 daily, plus a manual trigger — you'll use the manual trigger constantly while learning, because waiting until 2am to test is not a workflow.</p>
+      <div class="why"><span class="kicker">Why a state machine, not one big Lambda</span><p>A state machine makes the pipeline visible: you can open the console and <em>see</em> which step failed, with its input and output. A single Lambda hides all of that inside logs. Visibility is the difference between a system you can operate and a black box.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p>In the Step Functions console, a manual execution goes Ingest → Transform → Succeeded, and the <code>customers</code> row count goes up.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">6</span>Break it on purpose: the column rename</h4>
+      <p>Add a flag to the seeder (<code>--rename-column</code>) that writes the nightly CSV with <code>customer_status</code> instead of <code>cust_status</code> — exactly the walkthrough's incident. Run the pipeline with the flag and watch it fail: the transform raises, Step Functions takes the failure branch, and the live table is untouched (stale, not wrong).</p>
+      <div class="why"><span class="kicker">Why you must be able to break it on demand</span><p>Every agent you build later is tested against this failure. If the failure is hard to reproduce, testing is hard, and untested agents are just demos. “Break it on purpose” is the single most valuable testing skill in this project.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">7</span>Build the tiny dashboard</h4>
+      <p>Write the dashboard publisher: a small function (<code>src/pipeline/publish_dashboard.py</code>) that reads the table and writes a one-page <code>dashboard/index.html</code> showing “fresh” or “stale”. A static S3 site cannot query Postgres, so the publisher does the reading and writes the numbers into the page — run it locally with <code>uv run</code> after each load for now; it deploys as a Lambda in Phase 8. Freshness is a load timestamp written by the transform on each run — not the newest <code>signup_date</code>. The dashboard is how a human sees the incident: fresh numbers mean healthy, stale numbers mean something broke overnight.</p>
+      <div class="expect"><span class="kicker">You should see</span><p>After a clean run the dashboard says fresh with the run's load timestamp; after a renamed-column run it says stale with the previous run's timestamp. Both states, on demand.</p></div>
+    </div>
+
+    <h3>Check yourself — Phase 1 is done when all of these are true</h3>
+    <ul class="check">
+      <li>A clean run loads and the dashboard shows fresh numbers.</li>
+      <li>A renamed-column run fails, Step Functions shows the failure branch, and the dashboard shows stale numbers.</li>
+      <li>The live table is never partially updated by a failed run (check the row count before and after).</li>
+      <li>Both runs are reproducible on demand with one command each.</li>
+    </ul>
+    <div class="callout warn">
+      <span class="kicker">Watch out</span>
+      <p style="margin-top:6px">Lambda timeouts: the default is 3 seconds — loading a CSV needs more, so set the timeout to 60s in the template. Local Postgres vs the Lambda's connection: the Lambda in AWS can't reach your laptop's database; for Phase 1 the Lambdas run against the local Docker Postgres from your machine (via <code>uv run</code>) and the AWS deployment comes in Phase 8 — don't burn time wiring VPCs now. And always check the region before deploying the template.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="p2-h">
+  <div>
+    <p class="kicker">Phase 2 &middot; 2 weeks &middot; &lt; $1</p>
+    <h2 id="p2-h">The first agent: the Detector, tools, and the loop</h2>
+  </div>
+  <div class="phase">
+    <h3>The idea</h3>
+    <p class="prose" style="margin-top:8px">Now something is allowed to <em>look</em> at the failure — but only through tools, and only with a brief. An agent is a loop: the model perceives (reads tool results), plans (decides the next tool call), acts (calls it), and observes (reads the result) until it can answer. The Detector's job is narrow on purpose: given a failed run, say what broke and cite the evidence. Narrow is good — a narrow agent is one you can test.</p>
+    <div class="chips"><span class="chip learn">You will learn</span><span class="chip">The agent loop</span><span class="chip">MCP / FastMCP tool servers</span><span class="chip">Tool allow-lists</span><span class="chip">Context engineering</span><span class="chip">Strands Agents SDK</span></div>
+
+    <div class="step"><h4><span class="n">1</span>Understand the loop before you code it</h4>
+      <p>Before writing anything, read the Strands loop once. In the Strands source (inside your <code>.venv</code>, or on GitHub), find the main loop: it sends the conversation to the model, the model returns either text or a tool call, the tool runs, the result goes back into the conversation, repeat. Write one paragraph in the repo (<code>docs/loop-note.md</code>) explaining it in your own words. If you can't explain it, you don't understand it yet — and the rest of the phase will feel like magic.</p>
+      <div class="why"><span class="kicker">Why read the framework code</span><p>Frameworks feel like magic until you read them. The Strands loop is about 100 lines. Reading it once turns “the agent decided” into “the model returned a tool call, the loop executed it, the result went back in” — and from then on, every strange behaviour has a place to look.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">2</span>Build the FastMCP tool server with two tools</h4>
+      <p>Write <code>src/tools/logs_server.py</code> using FastMCP. Two tools only:</p>
+      <pre># src/tools/logs_server.py
+from fastmcp import FastMCP
+mcp = FastMCP("logs")
+
+@mcp.tool
+def read_job_logs(run_id: str) -> str:
+    """Return the error lines for a pipeline run, not the whole log."""
+    ...  # read the run's log, return only lines containing ERROR / the failure
+
+@mcp.tool
+def get_table_schema(table: str) -> dict:
+    """Return the current column names of a table."""
+    ...  # query information_schema, return {"columns": [...]}
+
+if __name__ == "__main__":
+    mcp.run()</pre>
+      <p>Notice what each tool does <em>not</em> do: <code>read_job_logs</code> returns the error lines, not 40,000 raw lines. Tools are the agent's senses — a good tool returns exactly what the agent needs, already filtered. Test both tools by hand first: call them from a small script and read the output yourself.</p>
+      <div class="why"><span class="kicker">Why MCP, and why two tools</span><p>MCP (Model Context Protocol) is the standard way to give a model tools: the server describes each tool (name, inputs, what it does), and any MCP-compatible agent can use it. Two tools is a deliberate constraint — with two tools you can prove the agent chooses correctly; with twenty, you can't tell choosing from guessing.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">3</span>Create the Detector with a 2-tool allow-list</h4>
+      <p>Write <code>src/agents/detector.py</code>. In Strands, an agent is a model plus tools plus a system prompt:</p>
+      <pre>from strands import Agent
+from strands.models import BedrockModel
+from strands.tools.mcp import MCPClient
+from mcp.client.stdio import stdio_client, StdioServerParameters
+
+model = BedrockModel(model_id="amazon.nova-micro-v1:0", region_name="ap-southeast-2")
+# connect to your FastMCP server, then:
+detector = Agent(model=model, tools=[read_job_logs, get_table_schema],
+                 system_prompt="You are the Detector. Find what broke in the failed run. "
+                               "Use only your tools. Cite the tool result for every claim.")
+result = detector("Run 2026-11-18-0214 failed. What broke?")</pre>
+      <p>The allow-list is the <code>tools=[...]</code> list. The Detector physically cannot call a tool that isn't in it — that is a design decision, not a request in the prompt. Use the model ID you recorded in ADR-002 in Phase 0 Spike B — if Spike B found an <code>apac.</code> inference profile ID works in Sydney, use that here instead of the plain ID. Run it against a real failed run.</p>
+      <div class="expect"><span class="kicker">You should see</span><p>The Detector calls <code>read_job_logs</code>, then <code>get_table_schema</code>, and reports: the transform failed because <code>cust_status</code> is missing, and the schema now has <code>customer_status</code> — citing both tool results.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">4</span>Build the context builder: the brief, not the log file</h4>
+      <p>Write <code>src/shared/context.py</code> with a function <code>build_brief(run_id)</code> that returns a short brief with exactly 6 items — schema diff, runbook, owner, target, rules, deadline — and nothing else. The Detector receives the brief — never the raw logs. Then write the test that proves it:</p>
+      <pre># tests/test_context.py
+# A known raw log line from the failed run — it must never appear in the brief.
+RAW_LOG_LINE = "2026-11-18T02:14:03Z INFO ingest-worker-7 batch 412/40000 rows=10000"
+
+def test_brief_is_small():
+    brief = build_brief("2026-11-18-0214")
+    assert len(brief) &lt; 2_000          # characters, not tokens
+    assert "cust_status" in brief
+    assert RAW_LOG_LINE not in brief     # the raw log line must not leak in</pre>
+      <div class="why"><span class="kicker">Why the brief is the whole lesson of Phase 2</span><p>Models have limited attention and every token costs money. Dumping 40,000 log lines into the prompt is slow, expensive, and makes the model worse — it drowns the signal in noise. Context engineering is the discipline of giving the model exactly the information it needs, and this test is how you prove you did it. When agents misbehave later, the first question is always: “what was in the prompt?”</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p><code>uv run pytest tests/test_context.py</code> passes. Now break the brief on purpose (include the raw logs) and watch the test fail — that's the test earning its keep.</p></div>
+    </div>
+
+    <h3>Check yourself — Phase 2 is done when all of these are true</h3>
+    <ul class="check">
+      <li>Given a failed run, the Detector reports the missing column and cites the <code>get_table_schema</code> result.</li>
+      <li>Adding a third tool requires no change to the Detector's code (only the tools list).</li>
+      <li>The brief-size test passes, and fails when you deliberately break the brief.</li>
+      <li>You can explain the agent loop in one paragraph, in your own words (<code>docs/loop-note.md</code> exists).</li>
+    </ul>
+    <div class="callout warn">
+      <span class="kicker">Watch out</span>
+      <p style="margin-top:6px">If the Detector “knows” the answer without calling tools, it is guessing from its training data — check that your system prompt and brief don't contain the answer. If a tool call fails, read the error from the MCP server first; most failures are a wrong path or a missing environment variable. Bedrock throttling shows up as a rate-limit error — wait a minute and retry; at learning volumes this is rare.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="p3-h">
+  <div>
+    <p class="kicker">Phase 3 &middot; 2 weeks &middot; &lt; $1</p>
+    <h2 id="p3-h">The Diagnoser: RAG, memory, and grounding</h2>
+  </div>
+  <div class="phase">
+    <h3>The idea</h3>
+    <p class="prose" style="margin-top:8px">The Detector says <em>what</em> broke. The Diagnoser says <em>why</em> and <em>what to do about it</em> — and it must do that from evidence, not from vibes. Three ideas carry this phase: <strong>RAG</strong> (look up the runbook before explaining), <strong>memory</strong> (remember what happened last time), and <strong>grounding</strong> (every claim carries a source, or it is labelled unknown). These three are what separate an agent from a chatbot with tools.</p>
+    <div class="chips"><span class="chip learn">You will learn</span><span class="chip">Embeddings &amp; pgvector</span><span class="chip">RAG (retrieval-augmented generation)</span><span class="chip">Short- vs long-term memory</span><span class="chip">Grounding &amp; citations</span><span class="chip">DynamoDB basics</span></div>
+
+    <div class="step"><h4><span class="n">1</span>Write the runbook and the data contract</h4>
+      <p>Write two short Markdown files in <code>docs/</code>: <code>runbook-4.2-column-renames.md</code> (“Handling column renames”: check the schema diff, check the source change note, update the mapping, test on a copy first) and <code>customers-contract.md</code> (the <code>customers</code> table's columns and their meaning). Keep each under a page. These are the documents the Diagnoser will retrieve — and writing them forces you to decide what the correct procedure actually is, which is half the learning.</p>
+      <div class="why"><span class="kicker">Why write docs for a machine to read</span><p>RAG only works if there is something worth retrieving. A runbook written for the agent is also a runbook for the human — and in a portfolio, it shows you can turn operational knowledge into something a system can use.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">2</span>Chunk, embed, and store them in pgvector</h4>
+      <p>Write <code>src/tools/index_docs.py</code>: split each document into chunks of ~500 characters (split on headings and paragraph breaks, never mid-sentence), embed each chunk with Bedrock Titan (<code>amazon.titan-embed-text-v2:0</code>), and store the chunk text plus its embedding vector in a Postgres <code>documents</code> table with a <code>vector</code> column. Run it once and inspect the table — you should see rows with chunk text and a long list of numbers (the vector).</p>
+      <div class="why"><span class="kicker">What an embedding actually is</span><p>An embedding turns text into a list of ~1,024 numbers that captures meaning: texts that mean similar things get similar numbers. That lets the database answer “find the chunk most similar to this question” with arithmetic (nearest neighbour) instead of keyword matching. Chunking matters because one whole document is too coarse — you want the one paragraph that answers the question, not the whole manual.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p><code>SELECT count(*) FROM documents;</code> returns the number of chunks, and a similarity query for “column rename” returns the runbook chunk at the top.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">3</span>Add the search_runbook tool and the Diagnoser</h4>
+      <p>Add <code>search_runbook(query)</code> to your MCP tool server: it embeds the query, finds the nearest chunks in pgvector, and returns their text. Then write <code>src/agents/diagnoser.py</code> with tools <code>[search_runbook, get_table_schema, read_job_logs]</code> and a system prompt that says: retrieve before you explain. Run it against the seeded incident.</p>
+      <div class="expect"><span class="kicker">You should see</span><p>The Diagnoser calls <code>search_runbook</code> first, then explains the failure by citing the runbook section and the schema diff — not by inventing a cause.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">4</span>Give it memory: DynamoDB, short-term and long-term</h4>
+      <p>Create one DynamoDB table, <code>apa-memory</code>, with a partition key and a sort key (plan §7): short-term notes use <code>PK=incident#2026-11-18</code>, <code>SK=note#…</code>; long-term lessons use <code>PK=lesson#sept-rename</code>, <code>SK=meta</code>. Short-term: the Diagnoser writes notes about the current run. Long-term: write one lesson by hand — the September orders-table rename, fix: update the mapping. Approvals are never stored here — they live in <code>apa-approvals</code> (Phase 4). Then give the Diagnoser a <code>recall_lessons</code> tool that reads lessons before diagnosing.</p>
+      <div class="why"><span class="kicker">Why two kinds of memory</span><p>Short-term memory is the run's scratchpad — it dies with the run. Long-term memory is what makes the system get better over time: the September lesson changes what the Diagnoser suggests today. If you can't tell which kind a piece of information is, you can't design memory at all.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p>Run the Diagnoser twice: once with the September lesson present, once with it deleted (temporarily). The suggested fix changes — that difference proves memory is load-bearing, not decorative.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">5</span>Enforce grounding in code</h4>
+      <p>In the Diagnoser, add a rule — in code, not just in the prompt: every claim in the diagnosis must carry a source reference (a tool result, a runbook chunk, or a lesson). After the model answers, a small function checks the claims; any claim without a source is rewritten as “unknown”. Test it by asking about something with no evidence and confirming the answer says “unknown” instead of inventing one.</p>
+      <div class="why"><span class="kicker">Why grounding must be code, not a prompt</span><p>A prompt says “please cite sources”. A model under pressure will still invent a confident answer. Code that checks the output and rewrites unsourced claims cannot be talked out of it. This is the pattern of the whole project: the important rules live in code, the prompt is only a suggestion.</p></div>
+    </div>
+
+    <h3>Check yourself — Phase 3 is done when all of these are true</h3>
+    <ul class="check">
+      <li>A 10-question retrieval test scores ≥ 8/10 (write 10 questions whose answers are in the runbook, and check the right chunk comes back).</li>
+      <li>The diagnosis for the seeded incident cites the log line, the schema diff, and the change note.</li>
+      <li>Deleting the September lesson changes the Diagnoser's suggested fix.</li>
+      <li>A question with no evidence gets “unknown”, not an invented answer.</li>
+    </ul>
+    <div class="callout warn">
+      <span class="kicker">Watch out</span>
+      <p style="margin-top:6px">Chunks too big → retrieval returns whole documents and the model drowns; chunks too small → the answer is split across chunks. ~500 characters is a good starting point — tune it if the retrieval test scores low. DynamoDB on-demand has no servers to manage, but every item needs its keys right: if a read returns nothing, check the partition key value first.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="p4-h">
+  <div>
+    <p class="kicker">Phase 4 &middot; 4 weeks &middot; &lt; $1 &middot; The phase that earns the portfolio</p>
+    <h2 id="p4-h">The Fixer: safety — sandbox, guardrails, policy, identity, approval</h2>
+  </div>
+  <div class="phase">
+    <h3>The idea</h3>
+    <p class="prose" style="margin-top:8px">This is the longest phase because it is the most important one. The Fixer can repair the table — and, far more importantly, it <em>cannot</em> destroy it. Five safety ideas stack here, and each one is enforced in a different place, so that no single failure removes the protection: the sandbox (test before touching the real thing), the guardrail (block dangerous calls before they land), the policy (the swap needs an approval record), identity (the Fixer literally lacks permission to write production), and the human (a person approves the swap). If you only remember one phase in an interview, remember this one.</p>
+    <div class="chips"><span class="chip learn">You will learn</span><span class="chip">Sandboxing</span><span class="chip">Guardrail hooks</span><span class="chip">Policy enforcement</span><span class="chip">Postgres roles &amp; identity</span><span class="chip">Human-in-the-loop</span><span class="chip">Negative testing</span></div>
+
+    <div class="step"><h4><span class="n">1</span>Build the sandbox: write_test_copy</h4>
+      <p>Add a tool <code>write_test_copy</code> that clones live into a <code>customers_test</code> table first, then loads tonight's files into it with the new mapping (v2: <code>customer_status</code> → <code>cust_status</code>), and reports the row count and error count. Cloning from live first is what makes a swap safe — the test copy starts as a true copy of live. The Fixer always works here first. Nothing in this tool touches the live table — read its code twice and confirm that by inspection before you run it.</p>
+      <div class="why"><span class="kicker">Why a sandbox, not just “be careful”</span><p>“Be careful” is not a control. A separate table that you can drop and rebuild is a control: the blast radius of any mistake is a table nobody depends on. Every serious data system works this way — test copy first, live table only after proof.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p>After running it, <code>customers_test</code> is a clone of live with the new mapping applied and 0 load errors, while <code>customers</code> is unchanged.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">2</span>Add the three guardrail layers: hook, tool server, Postgres role</h4>
+      <p>There are three independent layers, and each one must refuse on its own. <strong>(1) Guardrail hook:</strong> Strands lets you attach a hook that runs before a tool call. Add one that inspects every tool call the Fixer attempts: if the call would overwrite the live <code>customers</code> table in one step, the hook blocks it, logs the attempt, and returns an error to the model saying “use the test copy first”. <strong>(2) Tool-server authorisation:</strong> the MCP tool server knows which agent is calling and refuses a live-table write from the Fixer — the check lives in the server, not in the agent's prompt. <strong>(3) Postgres role:</strong> the Fixer's database role cannot write production at all (step 3), so even a call that got past the first two layers fails at the database. Then write the negative test for each layer on its own: disable the hook and confirm the tool server still refuses; bypass the tool server and confirm Postgres still refuses. In every case, assert the live table is byte-identical afterwards (same row count and a hash of the contents).</p>
+      <div class="why"><span class="kicker">Why three layers, not a prompt</span><p>A prompt says “don't overwrite the live table”. A hook <em>prevents</em> it — the call never reaches the database. And one lock is not enough: if the hook had a bug, the tool server still refuses; if the tool server had a bug, Postgres still refuses. Three independent refusals is defence in depth. When you test it, you are testing the locks, and the test must try to break in — one layer at a time.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p>Each blocked attempt is logged, the model re-plans and uses the test copy instead, and the live table's row count and hash are unchanged — for each of the three layers, tested on its own.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">3</span>Give each agent its own Postgres role — and teach the tool server who is calling</h4>
+      <p>Create separate Postgres roles, one per agent: the Fixer role can read production and write staging, and <em>cannot</em> write production. The Detector and Diagnoser get read-only roles. The MCP tool server authenticates which agent is calling and connects to Postgres as that agent's role, so the database itself enforces the boundary. Then test it: connect as the Fixer role and try to write to the live table — Postgres must refuse. <strong>IAM roles do not control Postgres writes</strong> and mean nothing on local Docker — the Postgres role is the layer that actually says no at the database. (IAM still governs the AWS side: which Lambda can call which AWS service.)</p>
+      <div class="why"><span class="kicker">Why identity is a safety layer, not admin</span><p>Least privilege means every component has exactly the permissions it needs and no more. If the Fixer is ever compromised or confused, the damage it can do is bounded by its Postgres role. The database role is the one safety layer that works even when all your code is wrong — because it lives in the database, not in your code.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">4</span>Put the policy in the tool server, not the prompt</h4>
+      <p>Add the <code>swap_tables</code> tool, and inside it — in the tool's own code — check the <code>apa-approvals</code> table for a matching approval record before doing anything. A record matches only if it names this incident ID, the hash of this test copy, has not expired, and has not been used before. If any of those four fails, no swap, full stop. The model cannot talk the tool out of this because the model never sees the check; it only sees “approval required”. The approval record lives in <code>apa-approvals</code>, never in <code>apa-memory</code> — an agent that can write memory cannot approve itself.</p>
+      <div class="why"><span class="kicker">Why the check lives in the tool</span><p>Prompts are suggestions to a model that is very good at finding reasons to proceed. Code in the tool server is a gate. The rule for this project: if a rule matters, it lives in code or in the database role — the prompt is only ever a second opinion.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">5</span>Build the approve endpoint and the apa-approvals table</h4>
+      <p>An SNS email cannot host a working Approve link — and email scanners auto-click links, so a bare link could approve by itself. So build a small approve endpoint: a Lambda behind a Function URL that serves a confirmation page. Create the <code>apa-approvals</code> DynamoDB table (incident ID, test-copy hash, expiry, used flag). Only this endpoint can write to <code>apa-approvals</code> — no agent, no tool, and no other Lambda has write access to it. The endpoint checks the signed single-use token from the confirm page and, if it is valid, writes the approval record.</p>
+      <div class="why"><span class="kicker">Why a confirm page and a token</span><p>A link in an email is clicked by scanners, previewers, and curious humans — none of whom should be able to approve a live change. The confirm page means approving needs a deliberate click, and the signed single-use token means the click can only approve this incident, this test copy, once, before it expires. The endpoint is the one door, and the token is the key.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p>Opening the email link shows a confirmation page (not an instant approval). Clicking confirm writes one record to <code>apa-approvals</code>; clicking the same link again is refused as already used.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">6</span>Add the human: SNS email, confirm page, approval, swap</h4>
+      <p>When the test copy loads cleanly, the system sends you an SNS email: what broke, what was tested (test-copy row count and errors), and exactly what will change if you approve. The email links to the confirm page on the approve endpoint — it does not approve by itself. You click through, confirm, and the endpoint writes the approval record to <code>apa-approvals</code>; then the Fixer runs <code>swap_tables</code>, which checks the record first. Step Functions holds the wait with <code>waitForTaskToken</code> (30-minute timeout) — the wait lives in Step Functions, not in an agent Lambda, so the 15-minute Lambda cap cannot be hit by an 18-minute human. Rejecting — or doing nothing until the timeout — leaves the live table alone and the incident open. Test all three paths: approve, reject, and timeout.</p>
+      <div class="why"><span class="kicker">Why a human, and why email</span><p>Some decisions carry consequences a model should not take alone — swapping the table a whole company reads from is one of them. The approval step is real: it blocks the swap. Email is the simplest channel that works, and the timeout rule matters most: doing nothing must be safe, not a silent approval.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p>Approve → confirm page → approval record → swap happens, dashboard goes fresh. Reject → live table untouched, incident stays open. Timeout (30 minutes) → same as reject, and the system says so in the log.</p></div>
+    </div>
+
+    <h3>Check yourself — Phase 4 is done when all of these are true</h3>
+    <ul class="check">
+      <li>The full path runs end to end: blocked overwrite → test copy loads with 0 errors → approval email → confirm page → approval → swap → dashboard fresh.</li>
+      <li>No approval means no swap (tested).</li>
+      <li>A blocked overwrite leaves the live table byte-identical (tested) — for each of the three layers on its own.</li>
+      <li>A rejected approval leaves the live table alone (tested).</li>
+      <li>A timeout leaves the live table alone and the incident open (tested).</li>
+      <li>The Fixer Postgres role cannot write production even when asked directly (tested).</li>
+      <li>The approval record is in <code>apa-approvals</code>, written only by the approve endpoint — never in <code>apa-memory</code>.</li>
+    </ul>
+    <div class="callout warn">
+      <span class="kicker">Watch out</span>
+      <p style="margin-top:6px">The negative tests are the phase — if you only test the happy path, you have tested nothing about safety. Also: SNS email delivery can be slow the first time (check spam, and confirm the subscription). And keep the approval record's key exact: a swap that looks up the wrong key will fail closed (safe, but confusing) — read the key twice. Never put the approval record in <code>apa-memory</code>: if an agent can write memory, it can approve itself.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="p5-h">
+  <div>
+    <p class="kicker">Phase 5 &middot; 2 weeks &middot; &lt; $1</p>
+    <h2 id="p5-h">The Verifier and the eval set: proof instead of “it worked”</h2>
+  </div>
+  <div class="phase">
+    <h3>The idea</h3>
+    <p class="prose" style="margin-top:8px">Until now, “it works” has meant “I watched it work once”. That doesn't survive change. Phase 5 makes proof automatic: the Verifier checks the fixed table against four concrete checks, and a 20-case eval set scores the whole system on every change. From here on, a change that breaks the evals is a change that doesn't ship — and you can say, with numbers, whether a change helped or hurt.</p>
+    <div class="chips"><span class="chip learn">You will learn</span><span class="chip">Verification checks</span><span class="chip">Evals (agent evaluation)</span><span class="chip">Regression testing</span><span class="chip">CI with GitHub Actions</span></div>
+
+    <div class="step"><h4><span class="n">1</span>Write run_checks: the 4 checks from the walkthrough</h4>
+      <p>Add a <code>run_checks</code> tool that runs four checks against a table and returns pass/fail for each: (1) row count = live-before + file rows, (2) column names match the contract and no null keys, (3) status values are in the contract set, (4) a 100-row sample matches the source. Each check is a small SQL query plus an assertion. The Verifier agent calls this tool — through MCP like every other agent; it has no direct Postgres access — and reports the results.</p>
+      <div class="why"><span class="kicker">Why four specific checks, not “looks good”</span><p>“Looks good” is an opinion. Row count, column names and null keys, status values, sample match — those are facts a computer can verify, and each one catches a different failure mode (a partial load, a wrong mapping, an invalid status, corrupt data). Writing the checks is deciding what “fixed” means.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p>On a fixed table: 4/4 pass. On the broken table: at least the column-name check fails.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">2</span>Wire the Verifier in twice: before approval, and after the swap</h4>
+      <p>The Verifier does not check once — it checks twice. <strong>Before approval:</strong> after the test copy loads, the Verifier runs the 4 checks on <code>customers_test</code>, and the approval request carries that result. A failing check blocks the approval request — there is nothing for the human to approve yet. <strong>After the swap:</strong> the Verifier re-runs the 4 checks on live <code>customers</code>, and a failure rolls back to <code>customers_prev</code> (the old live table, kept for exactly this). Update the Phase 4 flow so the approval email now includes the pre-approval 4-check result. Test both: a bad test copy never reaches the human, and a bad live table is rolled back.</p>
+      <div class="why"><span class="kicker">Why twice, not once</span><p>Checking only after the swap means live is already wrong when a check fails — the damage is done and you're cleaning up. Checking the test copy first means the human only ever approves something already proven good, and the live check is the final safety net with a rollback behind it.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p>4/4 pass on the test copy before the approval email goes out; 4/4 pass on live after the swap. Break the test copy on purpose and confirm no approval email is sent; break live on purpose and confirm it rolls back to <code>customers_prev</code>.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">3</span>Build the 20-case eval set</h4>
+      <p>In <code>evals/</code>, create 20 cases: 10 retrieval (questions about the runbook — did the right chunk come back?), 5 diagnosis (given a failure, is the cause right?), and 5 end-to-end replays (run the seeded incident through the system and score the outcome). Write a scoring script (<code>evals/score.py</code>) that runs all 20 and prints a score like “17/20”. The pass mark is ≥ 17/20 (85%) and the 4 checks 4/4 — a change that drops below it does not merge. Commit the score file with every change that produces it, so the score history is visible in git.</p>
+      <div class="why"><span class="kicker">Why evals are different from unit tests</span><p>Unit tests check code: “does this function return the right value?” Evals check <em>behaviour</em>: “did the agent do the right thing?” A model can change its answer without any code changing, so you need a test that judges the answer. That is the eval set — and it is the gate between phases from now on.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">4</span>Break it on purpose and confirm the evals catch it</h4>
+      <p>Deliberately break the column mapping, run the evals, and confirm the score drops. Then fix it and confirm the score recovers. This is the most important test in the phase: an eval set that never fails is a eval set that tests nothing. Write down the before/after scores.</p>
+      <div class="expect"><span class="kicker">You should see</span><p>Broken mapping → evals red (score drops below 17/20). Fixed mapping → evals green again (≥ 17/20). If the score doesn't move, your evals are too easy — make a case harder.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">5</span>Run the evals in CI on every push</h4>
+      <p>Extend <code>.github/workflows/pr-validate.yml</code> with a job that installs dependencies with uv, runs pytest and the eval scoring script. It runs on every pull request — free for public repos. From now on, a PR that breaks the evals is visible before it merges, not after.</p>
+      <div class="why"><span class="kicker">Why CI, not “I'll remember to run it”</span><p>You won't remember. Nobody does. CI is the version of you that never forgets, never gets tired, and runs the tests the same way every time. Putting evals in CI is what turns them from a nice idea into a gate.</p></div>
+    </div>
+
+    <h3>Check yourself — Phase 5 is done when all of these are true</h3>
+    <ul class="check">
+      <li>The 4 checks pass 4/4 on a fixed table — test copy and live.</li>
+      <li>The Verifier checks the test copy before approval is requested, and re-checks live after the swap, with rollback to <code>customers_prev</code> on failure.</li>
+      <li>The 20-case eval suite runs in CI and scores ≥ 17/20 (85%) — the pass mark.</li>
+      <li>The deliberate regression turns it red, and the fix turns it green again.</li>
+      <li>A reviewer can run the eval set from your README instructions alone.</li>
+    </ul>
+    <div class="callout warn">
+      <span class="kicker">Watch out</span>
+      <p style="margin-top:6px">Evals that call Bedrock cost a little money and take time — keep the set at 20 cases, not 200. If CI is slow, check whether it's re-installing everything each run (uv caches help). And don't tune the evals to pass — if a case keeps failing, the system is wrong, not the test; fix the system or write down why the case is wrong and change the case openly.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="p6-h">
+  <div>
+    <p class="kicker">Phase 6 &middot; 2 weeks &middot; &lt; $1</p>
+    <h2 id="p6-h">The Orchestrator: four specialists become a team</h2>
+  </div>
+  <div class="phase">
+    <h3>The idea</h3>
+    <p class="prose" style="margin-top:8px">So far you have four agents that work alone. Now one agent — the Orchestrator — takes the goal (“fix last night's failed load”), splits it into the four tasks, assigns them, and decides when a human is needed. The shape is hub-and-spoke: every handoff passes through the Orchestrator, which validates it before the next agent acts — agents never hand work directly to each other. The key skill of this phase is the <strong>handoff</strong>: the package of work one agent passes to the next, via the hub. A good handoff has a fixed shape and is validated on receipt — because in multi-agent systems, most failures are not bad reasoning, they are lost information between agents.</p>
+    <div class="chips"><span class="chip learn">You will learn</span><span class="chip">Orchestration</span><span class="chip">Multi-agent systems</span><span class="chip">A2A protocol</span><span class="chip">Handoff schemas &amp; validation</span></div>
+
+    <div class="step"><h4><span class="n">1</span>Define the handoff schema first, in code</h4>
+      <p>Before any agent talks to another, write the handoff shape in <code>src/shared/handoff.py</code> using Pydantic — the plan's five fields: <code>done</code>, <code>next</code>, <code>owner</code>, <code>evidence</code> (list of sourced claims), <code>do_not_touch</code>. Every field is required. <code>do_not_touch</code> is a safety field — it names what the next agent must not change (e.g. the live table) — never drop it. This is the contract — and writing it first is the lesson: in multi-agent systems, the interface is the design.</p>
+      <pre># src/shared/handoff.py
+from pydantic import BaseModel, Field
+
+class Evidence(BaseModel):
+    claim: str
+    source: str            # which tool result / runbook chunk / lesson
+
+class Handoff(BaseModel):
+    done: str
+    next: str
+    owner: str
+    evidence: list[Evidence] = Field(min_length=1)   # at least one sourced claim
+    do_not_touch: list[str] = Field(min_length=1)     # safety: what must not change</pre>
+      <div class="why"><span class="kicker">Why a schema, not free text</span><p>When agents pass free text, information quietly disappears — a claim loses its source, a task loses its context, and nobody notices until the fix is wrong. A schema makes the loss visible: if a required field is missing, validation fails loudly instead of silently.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">2</span>Write the handoff validator and break it on purpose</h4>
+      <p>Write <code>validate_handoff(data)</code> — it parses the dict into the <code>Handoff</code> model and raises a clear error on failure. Then write the test: hand it a handoff with no <code>evidence</code>, and another with no <code>do_not_touch</code>, and confirm both are rejected and the run stops cleanly with an error, not a guess. This is the multi-agent version of Phase 4's guardrail: the system must refuse to proceed on incomplete information.</p>
+      <div class="expect"><span class="kicker">You should see</span><p>A valid handoff passes; a handoff missing <code>evidence</code> or <code>do_not_touch</code> raises a validation error naming the missing field.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">3</span>Build the Orchestrator</h4>
+      <p>Write <code>src/agents/orchestrator.py</code>. Its system prompt says: you are the Orchestrator; your job is to split the goal into tasks, assign them in order (Detect → Diagnose → Fix → Verify), and decide when a human is needed. It does not do the work itself — it delegates. This is hub-and-spoke: <strong>every handoff passes through the Orchestrator</strong>, which validates it before briefing the next agent. Agents never hand work directly to each other — if the Diagnoser needs to tell the Fixer something, it goes through the Orchestrator. Give it the four agents as tools (each agent exposed as a callable), and the handoff validator between each step: the Orchestrator receives each handoff, validates it, and only then passes it on.</p>
+      <div class="why"><span class="kicker">Why the Orchestrator doesn't do the work</span><p>One agent that does everything is one agent you can't test, can't replace, and can't reason about. Specialists are narrow and testable; the Orchestrator is the only part that knows the whole goal. That separation is the entire point of a multi-agent system — and it's what makes Phase 7's agent-swap test possible.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">4</span>Send tasks over A2A — same shape, in-process first</h4>
+      <p>A2A (Agent-to-Agent) is the protocol for agents talking to each other: a task request, a task accepted, a task result. In this phase the agents run in the same process, but the messages use the A2A shapes — so when you move them to separate services later, the logic doesn't change, only the transport. Write the three message types as small dicts in <code>src/shared/a2a.py</code> and use them for every delegation.</p>
+      <div class="why"><span class="kicker">Why use the protocol shape before you need it</span><p>Protocols are how parts stay swappable. If the Orchestrator calls agents directly with ad-hoc arguments, the agents are welded to it. If it sends A2A-shaped messages, any agent that speaks A2A can take the job — which is exactly what you'll prove in Phase 7.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">5</span>Run the seeded incident end to end, with no human except approval</h4>
+      <p>Trigger the renamed-column incident, then run the Orchestrator with the goal “fix last night's failed load”. Watch the hub-and-spoke flow: the Orchestrator briefs the Detector, validates the handoff, briefs the Diagnoser, validates, briefs the Fixer (test copy, approval email, you approve, swap), validates, then briefs the Verifier. The only human step is the approval — everything else is the team, coordinated through the hub.</p>
+      <div class="expect"><span class="kicker">You should see</span><p>The incident goes from alert to verified fix, the dashboard goes fresh, and the trace shows four handoffs, each validated. Then remove one agent (e.g. disable the Verifier) and confirm its phase's test fails — proving each agent is load-bearing.</p></div>
+    </div>
+
+    <h3>Check yourself — Phase 6 is done when all of these are true</h3>
+    <ul class="check">
+      <li>The seeded incident runs from alert to verified fix with the Orchestrator delegating and the four agents handing off.</li>
+      <li>A malformed handoff is rejected by validation, and the run stops cleanly.</li>
+      <li>Removing any one agent makes its phase's test fail.</li>
+      <li>You can draw the message flow (Orchestrator → 4 agents → approval → verify) from memory.</li>
+    </ul>
+    <div class="callout warn">
+      <span class="kicker">Watch out</span>
+      <p style="margin-top:6px">The classic multi-agent bug is the Orchestrator doing the work itself instead of delegating — if your Orchestrator's prompt contains the answer, it will skip the team. Keep its tools to delegation only. And if handoffs keep failing validation, the schema is probably too strict — loosen one field at a time, deliberately, and write down why.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="p7-h">
+  <div>
+    <p class="kicker">Phase 7 &middot; 3 weeks &middot; $1–2</p>
+    <h2 id="p7-h">Observability, protocols, and the model comparison</h2>
+  </div>
+  <div class="phase">
+    <h3>The idea</h3>
+    <p class="prose" style="margin-top:8px">A system you can't observe is a system you can't trust — or debug, or show anyone. This phase makes the system explain itself after the fact (traces), proves its parts are swappable (replace the Fixer and nothing else changes), and turns the model choice from a preference into a measurement (run the evals on two models and publish the numbers).</p>
+    <div class="chips"><span class="chip learn">You will learn</span><span class="chip">OpenTelemetry &amp; X-Ray tracing</span><span class="chip">CloudWatch dashboards</span><span class="chip">Protocol-based swapping</span><span class="chip">Measuring model choice</span></div>
+
+    <div class="step"><h4><span class="n">1</span>Turn on tracing: one trace per incident</h4>
+      <p>Enable OpenTelemetry in the Strands runtime and send traces to X-Ray. Each span should record: who acted (which agent), which tool was called, what came back, and how long it took. Then run the seeded incident and open the trace in the X-Ray console — you should be able to reconstruct the whole incident from it: Detector → Diagnoser → Fixer → approval → Verifier, with timings.</p>
+      <div class="why"><span class="kicker">Why traces, not more logs</span><p>Logs are a pile of lines; a trace is a story with a shape. When something goes wrong at 2am, you don't want to grep — you want to open one trace and see the sequence. Tracing is also how you find the slow step: the span timings show you exactly where the minutes went.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p>One trace per incident in X-Ray, with a span per agent and per tool call, in order.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">2</span>Build the CloudWatch dashboard</h4>
+      <p>In the CloudFormation template, add a CloudWatch dashboard with four graphs: runs per day, failures, approvals (granted / rejected / timed out), and eval scores over time. This is the operations view — the thing you'd look at every morning if this were a real system.</p>
+      <div class="why"><span class="kicker">Why a dashboard, not just alarms</span><p>Alarms tell you something is wrong right now. A dashboard tells you whether things are getting better or worse over weeks — and in a portfolio, it shows you think about operating a system, not just building one.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">3</span>Swap the Fixer and change nothing else</h4>
+      <p>Build a second Fixer — differently (different prompt, or a different model, or plain code instead of an agent) — behind the same MCP/A2A contracts. Swap it in, run the evals, and confirm they still pass with no other changes. This is the protocol test: it proves the contracts from Phases 2 and 6 are real, because a different implementation fits behind them.</p>
+      <div class="why"><span class="kicker">Why swapping proves the design</span><p>Anyone can claim their agents are modular. Swapping one and watching the evals stay green is the proof. If the swap breaks things, the contracts were leaking — find where, and fix the contract, not the swap.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">4</span>Run the evals on Nova Micro and on Claude Haiku</h4>
+      <p>Run the 20-case eval set twice: once with the default model (Nova Micro) and once with Haiku. Record three numbers for each: score, cost per run, and time per run. Publish the table in the README. Then decide — with the numbers in front of you — whether the default model (ADR-002) stays or changes. If it changes, write a new ADR saying so and why; that's what ADRs are for.</p>
+      <div class="why"><span class="kicker">Why measure instead of prefer</span><p>“I like Haiku” is a preference. “Haiku scores 18/20 at $0.04/run vs Nova's 17/20 at $0.01/run” is a decision. Model choice is one of the most common engineering decisions you'll ever make, and this is how it's made properly — with numbers, in public, in the repo.</p></div>
+    </div>
+
+    <h3>Check yourself — Phase 7 is done when all of these are true</h3>
+    <ul class="check">
+      <li>A reviewer can open one trace and reconstruct the whole incident.</li>
+      <li>The swapped Fixer passes the evals with no other changes.</li>
+      <li>The model comparison table exists in the README with real numbers.</li>
+      <li>ADR-002 is either confirmed or changed by a new ADR, with the numbers cited.</li>
+    </ul>
+    <div class="callout warn">
+      <span class="kicker">Watch out</span>
+      <p style="margin-top:6px">Tracing adds overhead and log volume — keep the 7-day retention so it can't surprise the bill. The model comparison is only honest if both runs use the same eval set and the same code — run them back to back, and don't tune prompts between runs.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="p8-h">
+  <div>
+    <p class="kicker">Phase 8 &middot; 2 weeks &middot; ~$1–2 + one RDS day (~$0.50)</p>
+    <h2 id="p8-h">Ship it: the RDS demo, the portfolio, and switching off</h2>
+  </div>
+  <div class="phase">
+    <h3>The idea</h3>
+    <p class="prose" style="margin-top:8px">The last phase is about the stranger: someone who has never met you opens your repo and decides, in ten minutes, whether you know what you're doing. So you prove the one thing you haven't yet — that the system runs against real RDS — record it, package everything a stranger needs, and then turn the cloud off. A finished project with the lights off is worth more than an unfinished one still running.</p>
+    <div class="chips"><span class="chip learn">You will learn</span><span class="chip">RDS in practice</span><span class="chip">Demo &amp; documentation</span><span class="chip">The stranger test</span><span class="chip">Retrospectives</span></div>
+
+    <div class="step"><h4><span class="n">1</span>RDS: deploy in the morning, delete it the same day (with a snapshot)</h4>
+      <p>Add the RDS instance (<code>db.t3.micro</code>, Postgres 16) to the CloudFormation template and deploy it via the GitHub workflow. Load the seeded data, run one full end-to-end incident against it, and record your screen while it runs. Then delete the instance the same day (take a snapshot first) — and verify in the console that it is deleted and note the cost. Do not stop it and leave it: a stopped RDS instance auto-restarts after 7 days. Do not leave it running “to check tomorrow”. Tomorrow is how $0.50 becomes $15.</p>
+      <div class="why"><span class="kicker">Why one day, and why delete it yourself</span><p>The demo proves the system works against a managed database, which is what a reviewer expects to see. Deleting it the same day proves you understand the cost model you wrote in §10 of the plan. Both halves matter.</p></div>
+      <div class="expect"><span class="kicker">You should see</span><p>One recorded end-to-end run against RDS, the instance deleted afterwards (snapshot kept), and the day's cost noted in the README.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">2</span>Write the README a stranger can follow</h4>
+      <p>Rewrite the README from scratch, for someone who knows nothing about the project: what it is (one paragraph), the architecture diagram, how to run the incident locally in 15 minutes, the cost table, the eval results, and the model comparison table. Then do the stranger test: ask someone (or pretend, rigorously) to follow it cold. Every place they get stuck is a README bug — fix it there, not in a message to them.</p>
+      <div class="why"><span class="kicker">Why the README is a deliverable, not an afterthought</span><p>In a portfolio, the README is the first thing a hiring manager reads and often the only thing. A repo with a great README and good code beats a repo with great code and no README, because the second one never gets read.</p></div>
+    </div>
+
+    <div class="step"><h4><span class="n">3</span>Record the demo and write the retrospective</h4>
+      <p>Record a 3–5 minute screen video: the seeded incident, the failure, the agents working, the approval email, the swap, the dashboard going fresh. Add screenshots of the trace and the dashboard. Then write a one-page retrospective in <code>docs/retrospective.md</code>: what broke, what you re-decided (and which ADRs changed), and what you would do differently. The retrospective is the most believable part of any portfolio — it shows you learned, not just that you shipped.</p>
+    </div>
+
+    <div class="step"><h4><span class="n">4</span>Switch everything off and prove the bill</h4>
+      <p>Run <code>aws cloudformation delete-stack</code> for the stack, confirm every resource is gone, and screenshot the month's AWS bill at or under $10. Check the budget alarms are still in place for next time. Commit the final state, tag it <code>v2.0</code>, and push.</p>
+      <div class="expect"><span class="kicker">You should see</span><p>No stacks, no running instances, a bill ≤ $10 with a screenshot, CI green on the final commit, and no secrets anywhere in the repo (run a secret scan to prove it).</p></div>
+    </div>
+
+    <h3>Check yourself — Phase 8 is done when all of these are true</h3>
+    <ul class="check">
+      <li>A stranger can clone the repo, follow the README, and run the incident locally.</li>
+      <li>The demo recording exists, with the approval email and the trace visible.</li>
+      <li>The final month's AWS bill is ≤ $10, with a screenshot to prove it.</li>
+      <li>The retrospective is written.</li>
+      <li>Everything in AWS is deleted; the repo is tagged <code>v2.0</code>.</li>
+    </ul>
+  </div>
+</section>
+
+<section aria-labelledby="stuck-h">
+  <div>
+    <p class="kicker">Appendix A</p>
+    <h2 id="stuck-h">When you're stuck</h2>
+  </div>
+  <div class="prose">
+    <p><strong>Read the error, all of it.</strong> Most errors name the exact problem in the last two lines. Copy the error message into your notes before you start fixing — it stops you fixing the wrong thing.</p>
+    <p><strong>Bisect.</strong> If something worked and now doesn't, find the last thing that changed and undo it. If a step fails, run the step before it again to confirm it still passes — that tells you whether the problem is here or upstream.</p>
+    <p><strong>Check the region and the account first.</strong> Run <code>aws sts get-caller-identity</code> and look at the console region. Half of all AWS confusion is one of these two.</p>
+    <p><strong>Ask the plan.</strong> Re-read the relevant ADR — it usually names the fallback. Then re-read the plan section for that phase and compare what you built against what it describes, with the exact error message in front of you. Bring the error, not a summary of it.</p>
+    <p><strong>Take the win.</strong> If a sitting ends with one small thing working that didn't work before, that's a good sitting. Write down what changed — your future self will thank you.</p>
+  </div>
+</section>
+
+<section aria-labelledby="cheat-h">
+  <div>
+    <p class="kicker">Appendix B &middot; Cheat sheet</p>
+    <h2 id="cheat-h">Commands you'll use every week</h2>
+  </div>
+  <div class="tablewrap"><table class="rows">
+    <tr><th>What</th><th>Command</th></tr>
+    <tr><td>Run anything in the project env</td><td class="mono">uv run &lt;command&gt;</td></tr>
+    <tr><td>Run the tests</td><td class="mono">uv run pytest</td></tr>
+    <tr><td>Run one test file</td><td class="mono">uv run pytest tests/test_context.py -v</td></tr>
+    <tr><td>Add a package</td><td class="mono">uv add &lt;package&gt;</td></tr>
+    <tr><td>Start / stop local Postgres</td><td class="mono">docker compose up -d / docker compose down</td></tr>
+    <tr><td>Check Postgres</td><td class="mono">psql "postgresql://apa:apa-dev-only@localhost:5432/assurance"</td></tr>
+    <tr><td>Who am I in AWS</td><td class="mono">aws sts get-caller-identity --region ap-southeast-2</td></tr>
+    <tr><td>List stacks</td><td class="mono">aws cloudformation list-stacks --region ap-southeast-2</td></tr>
+    <tr><td>Delete a stack</td><td class="mono">aws cloudformation delete-stack --stack-name &lt;name&gt; --region ap-southeast-2</td></tr>
+    <tr><td>Check the month's spend</td><td class="mono">aws ce get-cost-and-usage --time-period Start=2026-11-01,End=2026-12-01 --granularity MONTHLY --metrics BlendedCost --region us-east-1</td></tr>
+  </table></div>
+  <p class="prose" style="margin-top:12px">Cost Explorer (<code>ce</code>) is a global service, so its commands use <code>us-east-1</code> even though everything else is in Sydney — that's normal, not a mistake.</p>
+</section>
+
+<footer>
+  <p class="kicker">Agentic Pipeline Assurance — Learning Guide v2.0 — 20 Nov 2026</p>
+  <p style="margin-top:8px;font-size:14px;color:var(--muted)">Companion to the <em>Build Plan v2.0</em> (11 ADRs; ADR-011 draft until the plan is approved). The plan is the map — architecture, decisions, cost model. This guide is the route — one step at a time, with the why attached. When the two disagree, the plan wins: note the discrepancy and correct the guide.</p>
+</footer>
+
+</div>
+</body></html>

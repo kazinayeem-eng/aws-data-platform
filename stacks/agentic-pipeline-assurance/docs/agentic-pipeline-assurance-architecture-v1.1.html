@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:,">
+<title>Agentic Pipeline Assurance Architecture — v1.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F3F0; --surface:#FFFFFF; --surface2:#EEF1F4; --ink:#182230; --muted:#5C6B7E; --line:#D8DEE6;
+  --agent:#2457C5; --agent-soft:#E3EBFF; --agent-line:#9AB6F5;
+  --ok:#177A3A; --ok-soft:#DFF2E4; --bad:#C62F1F; --bad-soft:#FDE9E6; --warn:#8A5A00; --warn-soft:#FEF0C0;
+  --sys:#EAF0F6; --radius:14px;
+  --font:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0D141C; --surface:#151F2B; --surface2:#1B293A; --ink:#EAF0F7; --muted:#9DACC0; --line:#2A3A4E;
+    --agent:#82B0FF; --agent-soft:#1C335E; --agent-line:#3A5FA3;
+    --ok:#6ED598; --ok-soft:#163826; --bad:#FF9A8A; --bad-soft:#4A221C; --warn:#F0BE5A; --warn-soft:#3A2E0E;
+    --sys:#1E2E42;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.55;padding:22px 16px 56px}
+a{color:var(--agent)}
+.wrap{max-width:1120px;margin:0 auto}
+button{min-height:44px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:clamp(28px,5vw,44px);line-height:.98;letter-spacing:-.02em;margin:8px 0 12px;font-weight:700;max-width:18ch}
+h1 em{font-style:normal;color:var(--agent)}
+.lede{font-size:17px;line-height:1.6;color:var(--muted);max-width:68ch;margin:0}
+.lede strong{color:var(--ink)}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid var(--line);background:var(--surface);border-radius:999px;font-family:var(--mono);font-size:12px;font-weight:500}
+.chip b{color:var(--agent)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+
+/* Stage */
+.stage{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+.stage-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+.stage-head-left{display:flex;align-items:center;gap:10px;min-width:0}
+.live{width:9px;height:9px;border-radius:50%;background:var(--bad);box-shadow:0 0 0 5px var(--bad-soft);flex:none}
+.stage-title{font-weight:700;font-size:15px}
+.stage-sub{font-size:13px;color:var(--muted)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0 16px;border-radius:999px;font-weight:600;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.btn.primary .playico{border-left-color:var(--surface)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:focus-visible,.pdot:focus-visible,.agent-card:focus-visible,.steps-list li:focus-visible{outline:3px solid var(--agent);outline-offset:2px}
+.playico{width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:9px solid var(--ink)}
+.pauseico{width:10px;height:11px;border-left:3px solid currentColor;border-right:3px solid currentColor}
+.speed{font-family:var(--mono);font-size:12px;padding:0 10px}
+
+/* Now happening */
+.now{display:grid;grid-template-columns:86px 1fr auto;gap:14px;align-items:center;padding:14px 16px;background:var(--surface2);border-bottom:1px solid var(--line)}
+.now-time{font-family:var(--mono);font-weight:700;font-size:20px;line-height:1;color:var(--ink)}
+.now-time small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px;font-weight:600}
+.now-title{font-weight:700;font-size:16px;line-height:1.25}
+.now-desc{font-size:14px;color:var(--muted);margin-top:2px;line-height:1.5}
+.progress{display:flex;flex-wrap:wrap;gap:5px;align-items:center;max-width:420px}
+.pdot{width:26px;height:6px;border-radius:999px;background:var(--line);border:0;padding:0;cursor:pointer;min-height:28px;position:relative}
+.pdot::after{content:"";position:absolute;inset:10px 0}
+.pdot.done{background:var(--agent)}
+.pdot.cur{background:var(--ink);box-shadow:0 0 0 3px var(--agent-soft)}
+.diagram-wrap{padding:10px 8px 4px;background-image:radial-gradient(var(--line) 1px, transparent 1.1px);background-size:22px 22px;background-color:var(--surface);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.scroll-hint{display:none;margin:0;padding:8px 14px 0;font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--surface)}
+svg.diagram{display:block;width:100%;min-width:900px;height:auto}
+svg.diagram text{font-family:var(--font)}
+.node{cursor:pointer}
+.node:focus-visible{outline:none}
+.node:focus-visible rect.main{stroke:var(--agent);stroke-width:3}
+.node rect.main{fill:var(--surface);stroke:var(--line);stroke-width:1.4;transition:all .25s}
+.node text.title{font-size:14px;font-weight:700;fill:var(--ink)}
+.node text.sub{font-size:11.5px;fill:var(--muted)}
+.node text.tag{font-size:10px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;fill:var(--muted);font-weight:600}
+.node.agent rect.main{fill:var(--agent-soft);stroke:var(--agent-line)}
+.node.sys rect.main{fill:var(--sys);stroke:var(--line)}
+.node.ok rect.main{fill:var(--ok-soft);stroke:var(--ok)}
+.node.bad rect.main{fill:var(--bad-soft);stroke:var(--bad)}
+.node.is-active rect.main{stroke:var(--agent);stroke-width:2.6;filter:drop-shadow(0 6px 14px rgba(36,87,197,.28))}
+.node.is-dim{opacity:.5}
+.flow{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:5 5;opacity:.65}
+.flow.active{stroke:var(--agent);stroke-width:2.4;opacity:1;stroke-dasharray:6 4;animation:dash 1s linear infinite}
+.flow.badflow{stroke:var(--bad)}
+.flow.okflow{stroke:var(--ok)}
+@keyframes dash{to{stroke-dashoffset:-10}}
+.band{fill:transparent;stroke:var(--line);stroke-width:1;stroke-dasharray:4 6}
+.band-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;fill:var(--muted);font-weight:700}
+.trustbox{fill:transparent;stroke:var(--ok);stroke-width:1.4;stroke-dasharray:5 4}
+.trust-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;fill:var(--ok);font-weight:700}
+.flabel{font-family:var(--mono);font-size:10px;font-weight:600;fill:var(--muted)}
+.bus{fill:var(--agent-soft);stroke:var(--agent-line);stroke-width:1.2}
+.bus-label{font-family:var(--mono);font-size:10.5px;font-weight:600;fill:var(--agent);paint-order:stroke;stroke:var(--agent-soft);stroke-width:5px;stroke-linejoin:round}
+.tick{stroke:var(--agent-line);stroke-width:2}
+.note{font-size:11.5px;fill:var(--muted)}
+.note-bad{font-size:12px;font-weight:700;fill:var(--bad)}
+#packet{filter:drop-shadow(0 2px 6px rgba(36,87,197,.5))}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;padding:12px 16px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);background:var(--surface)}
+.legend span{display:inline-flex;gap:7px;align-items:center}
+.sw{width:18px;height:12px;border-radius:4px;border:1.5px solid var(--line);background:var(--surface);display:inline-block}
+.sw.a{background:var(--agent-soft);border-color:var(--agent-line)} .sw.s{background:var(--sys)} .sw.g{background:var(--ok-soft);border-color:var(--ok)} .sw.r{background:var(--bad-soft);border-color:var(--bad)} .sw.t{background:transparent;border:1.5px dashed var(--ok)}
+
+/* Detail + layout below */
+.grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;margin-top:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+.card h2{font-size:18px;line-height:1.2;margin:6px 0 8px}
+.card h3{font-size:15px;margin:0 0 6px}
+.card p{color:var(--muted);font-size:14.5px;margin:0}
+.card p+p{margin-top:8px}
+.detail{min-height:210px}
+.detail .role{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--agent);font-weight:700}
+.detail h3{font-size:20px;margin:6px 0 6px}
+.detail ul{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:14px;line-height:1.6}
+.detail code,.card code{font-family:var(--mono);font-size:12.5px;background:var(--surface2);padding:1px 6px;border-radius:6px;color:var(--ink)}
+.steps-list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:0}
+.steps-list li{display:grid;grid-template-columns:52px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+.steps-list li:first-child{border-top:0}
+.steps-list li.cur .stitle{color:var(--agent)}
+.steps-list .stime{font-family:var(--mono);font-size:12px;font-weight:700;padding-top:2px}
+.steps-list .stitle{font-weight:700;font-size:14px}
+.steps-list .sdesc{font-size:13px;color:var(--muted)}
+
+/* Agents */
+.section{margin-top:28px}
+.section-head{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.section-head h2{font-size:24px;letter-spacing:-.02em;margin:6px 0 0;line-height:1.1}
+.agents{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
+.agent-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;text-align:left;width:100%;color:var(--ink);font-family:var(--font)}
+.agent-card:hover{border-color:var(--agent-line)}
+.agent-card.active{border-color:var(--agent);box-shadow:0 0 0 3px var(--agent-soft)}
+.agent-num{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--agent)}
+.agent-card h3{margin:6px 0 4px;font-size:16px}
+.agent-card p{font-size:13px;color:var(--muted);margin:0;line-height:1.5}
+.agent-card .tools{margin-top:10px;font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--ink);background:var(--surface2);padding:7px 8px;border-radius:8px;word-break:break-word}
+
+/* Stores / safety */
+.three{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px}
+.store{padding:16px}
+.store code{font-family:var(--mono);font-size:12px;background:var(--surface2);padding:2px 6px;border-radius:6px}
+.safety{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
+.safety .card{padding:16px}
+.safety .big{font-size:22px}
+.changes ul{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:14px;line-height:1.55}
+.changes li{margin-top:5px}
+.changes li strong{color:var(--ink)}
+.deploy{margin-top:16px;background:#182230;color:#EAF0F7;border:1px solid var(--line);border-radius:16px;padding:18px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+.deploy p{color:#CBD6E6;margin:6px 0 0;font-size:14px;max-width:62ch}
+.deploy code{font-family:var(--mono);font-size:12px;background:rgba(255,255,255,.12);padding:2px 6px;border-radius:6px;color:#fff}
+.deploy .cost{text-align:right}
+.deploy .cost strong{display:block;font-size:28px;line-height:1}
+.deploy .cost span{font-size:12px;opacity:.8;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.flowline{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;font-family:var(--mono);font-size:12px}
+.flowline .box{padding:7px 10px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(255,255,255,.08);color:#fff}
+.flowline .arr{color:#9DACC0}
+.foot{margin-top:18px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media(max-width:900px){
+  .agents{grid-template-columns:repeat(2,1fr)}
+  .safety{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+  .deploy{grid-template-columns:1fr} .deploy .cost{text-align:left}
+  .now{grid-template-columns:64px 1fr} .progress{grid-column:1/-1}
+  .scroll-hint{display:block}
+}
+@media(max-width:520px){
+  .agents{grid-template-columns:1fr}
+  body{padding:14px 10px 40px}
+  .now-time{font-size:17px}
+  .stage-head{padding:12px}
+}
+@media (prefers-reduced-motion: reduce){
+  .flow.active{animation:none}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="kicker">Agentic Pipeline Assurance • Architecture in motion • ap-southeast-2</p>
+    <h1>One failed load. <em>Five agents.</em> Fixed before 08:00.</h1>
+    <p class="lede">A nightly load fails at <strong>02:14</strong> from a renamed column. The diagram replays how it gets fixed — <strong>detect → diagnose → test in a sandbox → check → human approval → gated swap → verify (or roll back)</strong> — on the stack from plan v1.0, with the corrections listed at the bottom of this page.</p>
+    <div class="meta" aria-label="Key facts">
+      <span class="chip"><span class="dot"></span> Version <b>v1.1</b></span>
+      <span class="chip">Stack <b>agentic-pipeline-assurance-dev</b></span>
+      <span class="chip">Model <b>Bedrock Nova Micro</b></span>
+      <span class="chip">Framework <b>Strands Agents SDK</b></span>
+      <span class="chip">Budget <b>≤ $10 / month</b></span>
+      <span class="chip">Repo <b>stacks/agentic-pipeline-assurance/</b></span>
+    </div>
+  </header>
+
+  <!-- STAGE -->
+  <section class="stage" aria-label="Animated architecture diagram">
+    <div class="stage-head">
+      <div class="stage-head-left">
+        <span class="live" aria-hidden="true"></span>
+        <div>
+          <div class="stage-title">Architecture — incident replay</div>
+          <div class="stage-sub">Press play. Follow the blue packet along each step's arrows — every lit box is on the packet's path. Tap any box for what it does.</div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="prevBtn" type="button">← Prev</button>
+        <button class="btn primary" id="playBtn" type="button"><span class="playico" id="playIco"></span><span id="playLabel">Play replay</span></button>
+        <button class="btn" id="nextBtn" type="button">Next →</button>
+        <button class="btn speed" id="restartBtn" type="button">Restart</button>
+      </div>
+    </div>
+
+    <div class="now" id="nowBox" aria-live="polite">
+      <div class="now-time"><span id="nowTime">02:00</span><small id="nowStep">Step 1 / 12</small></div>
+      <div>
+        <div class="now-title" id="nowTitle">The nightly load starts</div>
+        <div class="now-desc" id="nowDesc"></div>
+      </div>
+      <div class="progress" id="progress" aria-label="Replay steps"></div>
+    </div>
+
+    <p class="scroll-hint">↔ Swipe the diagram sideways — it follows the action.</p>
+    <div class="diagram-wrap" id="diagramWrap">
+      <svg class="diagram" id="diagram" viewBox="0 0 980 772" role="group" aria-label="Architecture diagram. Pipeline at the top, agent team in the middle, platform below, then safety, approval and outcome.">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5C6B7E"/></marker>
+          <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2457C5"/></marker>
+          <marker id="arrowRed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#C62F1F"/></marker>
+          <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#177A3A"/></marker>
+        </defs>
+
+        <!-- Bands -->
+        <rect class="band" x="10" y="10" width="960" height="118" rx="12"/>
+        <text class="band-label" x="22" y="28">01 — Nightly pipeline</text>
+        <rect class="band" x="10" y="142" width="960" height="240" rx="12"/>
+        <text class="band-label" x="22" y="160">02 — Agent team · hub-and-spoke</text>
+        <rect class="band" x="10" y="394" width="960" height="130" rx="12"/>
+        <text class="band-label" x="22" y="412">03 — Model, tools, knowledge &amp; memory</text>
+        <rect class="band" x="10" y="540" width="960" height="216" rx="12"/>
+        <text class="band-label" x="22" y="558">04 — Safety, approval &amp; proof</text>
+
+        <!-- Strands runtime bus -->
+        <rect class="bus" x="22" y="350" width="936" height="18" rx="9"/>
+        <line class="tick" x1="133" y1="336" x2="133" y2="350"/>
+        <line class="tick" x1="371" y1="336" x2="371" y2="350"/>
+        <line class="tick" x1="609" y1="336" x2="609" y2="350"/>
+        <line class="tick" x1="847" y1="336" x2="847" y2="350"/>
+
+        <!-- Trust boundary: the approvals table and its only writer -->
+        <rect class="trustbox" x="272" y="562" width="240" height="184" rx="12"/>
+        <text class="trust-label" x="392" y="741" text-anchor="middle">TRUST BOUNDARY · NO AGENT WRITE PATH</text>
+
+        <!-- FLOWS. Every flow starts on one box and ends on another (checked in the page script). -->
+        <path id="p-sched" class="flow" d="M182 72 H218" marker-end="url(#arrow)"/>
+        <path id="p-step-lambda" class="flow" d="M388 62 H418" marker-end="url(#arrow)"/>
+        <path id="p-err" class="flow badflow" d="M418 90 H388" marker-end="url(#arrowRed)"/>
+        <path id="p-s3-lambda" class="flow" d="M638 58 H588" marker-end="url(#arrow)"/>
+        <path id="p-lambda-pg" class="flow" d="M560 104 C 560 126, 864 126, 864 104" marker-end="url(#arrow)"/>
+        <path id="p-sf-orch" class="flow" d="M300 104 V152 H490 V168" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+
+        <path id="p-orch-det" class="flow" d="M490 232 V244 H133 V272" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+        <path id="p-orch-diag" class="flow" d="M490 232 V244 H371 V272" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+        <path id="p-orch-fix" class="flow" d="M490 232 V244 H609 V272" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+        <path id="p-orch-ver" class="flow" d="M490 232 V244 H847 V272" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+
+        <path id="p-det-mcp" class="flow" d="M133 336 C 133 392, 440 380, 440 424" marker-end="url(#arrow)"/>
+        <path id="p-diag-mcp" class="flow" d="M371 336 C 371 395, 510 384, 510 424" marker-end="url(#arrow)"/>
+        <path id="p-fix-mcp" class="flow" d="M609 336 C 609 392, 580 392, 580 424" marker-end="url(#arrow)"/>
+        <path id="p-ver-mcp" class="flow" d="M847 336 C 847 392, 650 392, 650 424" marker-end="url(#arrow)"/>
+        <path id="p-mcp-rag" class="flow" d="M390 468 H366" marker-end="url(#arrow)"/>
+        <path id="p-mcp-mem" class="flow" d="M690 468 H714" marker-end="url(#arrow)"/>
+        <path id="p-mcp-sandbox" class="flow" d="M430 512 C 430 548, 142 536, 142 572" marker-end="url(#arrow)"/>
+        <path id="p-appr-check" class="flow okflow" d="M392 572 C 392 540, 500 548, 500 512" marker-end="url(#arrowGreen)"/>
+        <path id="p-mcp-pg" class="flow" d="M672 424 C 672 400, 728 400, 728 380 V 140 C 728 122, 930 130, 930 104" marker-end="url(#arrow)"/>
+
+        <path id="p-fix-guard" class="flow badflow" d="M698 336 V572" marker-end="url(#arrowRed)"/>
+        <path id="p-wait" class="flow" d="M250 104 V121 H14 V702 H22" marker-end="url(#arrow)"/>
+        <path id="p-human-endpoint" class="flow okflow" d="M242 702 H282" marker-end="url(#arrowGreen)"/>
+        <path id="p-endpoint-approvals" class="flow okflow" d="M392 670 V644" marker-end="url(#arrowGreen)"/>
+        <path id="p-ver-dash" class="flow okflow" d="M956 312 H966 V702 H958" marker-end="url(#arrowGreen)"/>
+
+        <text class="flabel" x="613" y="50" text-anchor="middle">reads</text>
+        <text class="flabel" x="640" y="138" text-anchor="middle">writes</text>
+        <text class="flabel" x="30" y="116">waitForTaskToken → SNS email</text>
+        <text class="flabel" x="402" y="660">signed · one-use</text>
+        <text class="flabel" x="706" y="540">blocked before it lands</text>
+
+        <text class="bus-label" x="490" y="363" text-anchor="middle">Strands runtime — every agent reasons via Bedrock · acts through MCP</text>
+
+        <!-- BAND 01: PIPELINE -->
+        <g class="node sys" data-node="scheduler" tabindex="0" role="button" aria-label="EventBridge Scheduler">
+          <rect class="main" x="22" y="40" width="160" height="64" rx="10"/>
+          <text class="tag" x="36" y="58">Trigger</text>
+          <text class="title" x="36" y="76">EventBridge</text>
+          <text class="sub" x="36" y="92">Scheduler • 02:00 daily</text>
+        </g>
+        <g class="node sys" data-node="stepfunctions" tabindex="0" role="button" aria-label="Step Functions">
+          <rect class="main" x="218" y="40" width="170" height="64" rx="10"/>
+          <text class="tag" x="232" y="58">Workflow</text>
+          <text class="title" x="232" y="76">Step Functions</text>
+          <text class="sub" x="232" y="92">Pipeline + approval wait</text>
+        </g>
+        <g class="node" data-node="lambda" tabindex="0" role="button" aria-label="Lambda ingest and transform">
+          <rect class="main" x="418" y="40" width="170" height="64" rx="10"/>
+          <text class="tag" x="432" y="58">Compute • Lambda</text>
+          <text class="title" x="432" y="76">Ingest + Transform</text>
+          <text class="sub" x="432" y="92">The pipeline job itself</text>
+        </g>
+        <g class="node sys" data-node="s3" tabindex="0" role="button" aria-label="S3 raw files">
+          <rect class="main" x="638" y="40" width="120" height="64" rx="10"/>
+          <text class="tag" x="652" y="58">Storage</text>
+          <text class="title" x="652" y="76">S3 — raw</text>
+          <text class="sub" x="652" y="92">7 days retained</text>
+        </g>
+        <g class="node sys" data-node="postgres" tabindex="0" role="button" aria-label="Postgres analytics table">
+          <rect class="main" x="778" y="40" width="172" height="64" rx="10"/>
+          <text class="tag" x="792" y="58">Analytics • Postgres</text>
+          <text class="title" x="792" y="76">customers</text>
+          <text class="sub" x="792" y="92">3 years • 1.2M rows</text>
+        </g>
+
+        <!-- BAND 02: ORCHESTRATOR + NOTES + AGENTS -->
+        <text class="note-bad" x="24" y="184" id="alertLabel">▲ 02:14 FAILED — Column ‘cust_status’ not found</text>
+        <text class="note" x="24" y="202">Brief (6): schema diff • runbook • owner •</text>
+        <text class="note" x="24" y="216">target • rules • deadline</text>
+        <text class="note" x="24" y="232">Handoff (5): done • next • owner • evidence • do-not-touch</text>
+
+        <g class="node agent" data-node="orchestrator" tabindex="0" role="button" aria-label="Orchestrator agent">
+          <rect class="main" x="395" y="168" width="190" height="64" rx="10"/>
+          <text class="tag" x="409" y="186">Coordinator • hub</text>
+          <text class="title" x="409" y="204">Orchestrator</text>
+          <text class="sub" x="409" y="219">Briefs • validates handoffs</text>
+        </g>
+        <g class="node agent" data-node="detector" tabindex="0" role="button" aria-label="Detector agent">
+          <rect class="main" x="24" y="272" width="218" height="64" rx="10"/>
+          <text class="tag" x="38" y="290">Agent 01</text>
+          <text class="title" x="38" y="308">Detector</text>
+          <text class="sub" x="38" y="323">What failed &amp; where</text>
+        </g>
+        <g class="node agent" data-node="diagnoser" tabindex="0" role="button" aria-label="Diagnoser agent">
+          <rect class="main" x="262" y="272" width="218" height="64" rx="10"/>
+          <text class="tag" x="276" y="290">Agent 02 • RAG + Memory</text>
+          <text class="title" x="276" y="308">Diagnoser</text>
+          <text class="sub" x="276" y="323">Why, with evidence</text>
+        </g>
+        <g class="node agent" data-node="fixer" tabindex="0" role="button" aria-label="Fixer agent">
+          <rect class="main" x="500" y="272" width="218" height="64" rx="10"/>
+          <text class="tag" x="514" y="290">Agent 03 • Gated swap</text>
+          <text class="title" x="514" y="308">Fixer</text>
+          <text class="sub" x="514" y="323">Builds the fix in the sandbox</text>
+        </g>
+        <g class="node agent" data-node="verifier" tabindex="0" role="button" aria-label="Verifier agent">
+          <rect class="main" x="738" y="272" width="218" height="64" rx="10"/>
+          <text class="tag" x="752" y="290">Agent 04 • Checks</text>
+          <text class="title" x="752" y="308">Verifier</text>
+          <text class="sub" x="752" y="323">Checks twice • 4/4 pass</text>
+        </g>
+
+        <!-- BAND 03: PLATFORM -->
+        <g class="node sys" data-node="bedrock" tabindex="0" role="button" aria-label="Amazon Bedrock Nova Micro">
+          <rect class="main" x="22" y="424" width="160" height="88" rx="10"/>
+          <text class="tag" x="36" y="442">Model • Bedrock</text>
+          <text class="title" x="36" y="460">Nova Micro</text>
+          <text class="sub" x="36" y="475">Prompts + tool calls</text>
+          <text class="sub" x="36" y="490">Haiku compared: Ph. 7</text>
+        </g>
+        <g class="node sys" data-node="rag" tabindex="0" role="button" aria-label="RAG retrieval from Postgres pgvector">
+          <rect class="main" x="196" y="424" width="170" height="88" rx="10"/>
+          <text class="tag" x="210" y="442">Knowledge • RAG</text>
+          <text class="title" x="210" y="460">Runbook + contract</text>
+          <text class="sub" x="210" y="475">documents • vector(1024)</text>
+          <text class="sub" x="210" y="490">Runbook 4.2 • contract v3</text>
+        </g>
+        <g class="node" data-node="mcp" tabindex="0" role="button" aria-label="MCP tool servers">
+          <rect class="main" x="390" y="424" width="300" height="88" rx="10"/>
+          <text class="tag" x="404" y="442">Tools • MCP (FastMCP) • authorises each agent</text>
+          <text class="title" x="404" y="460">Tool servers</text>
+          <text class="sub" x="404" y="475">read_job_logs • get_table_schema</text>
+          <text class="sub" x="404" y="490">search_runbook • write_test_copy • run_checks</text>
+          <text class="sub" x="404" y="505">swap_tables + publish_mapping (approval-gated)</text>
+        </g>
+        <g class="node sys" data-node="dynamodb" tabindex="0" role="button" aria-label="DynamoDB memory">
+          <rect class="main" x="714" y="424" width="244" height="88" rx="10"/>
+          <text class="tag" x="728" y="442">Memory • DynamoDB</text>
+          <text class="title" x="728" y="460">apa-memory</text>
+          <text class="sub" x="728" y="475">Runs • incidents • lessons</text>
+          <text class="sub" x="728" y="490">Agents write here — never approvals</text>
+        </g>
+
+        <!-- BAND 04: SAFETY, APPROVAL, PROOF -->
+        <g class="node" data-node="sandbox" tabindex="0" role="button" aria-label="Sandbox test copy">
+          <rect class="main" x="22" y="572" width="240" height="72" rx="10"/>
+          <text class="tag" x="36" y="590">Sandbox • Postgres</text>
+          <text class="title" x="36" y="608">customers_test</text>
+          <text class="sub" x="36" y="623">1.2M live + 4,331 new = 1,204,331</text>
+          <text class="sub" x="36" y="638">0 errors • old table kept as _prev</text>
+        </g>
+        <g class="node ok" data-node="approvals" tabindex="0" role="button" aria-label="Approvals table, separate from agent memory">
+          <rect class="main" x="282" y="572" width="220" height="72" rx="10"/>
+          <text class="tag" x="296" y="590">Approvals • DynamoDB</text>
+          <text class="title" x="296" y="608">apa-approvals</text>
+          <text class="sub" x="296" y="623">Only the endpoint can write</text>
+          <text class="sub" x="296" y="638">Hash-bound • expiring • one-use</text>
+        </g>
+        <g class="node bad" data-node="guardrails" tabindex="0" role="button" aria-label="Guardrails and policy layer">
+          <rect class="main" x="587" y="572" width="371" height="72" rx="10"/>
+          <text class="tag" x="601" y="590">Guardrails + Policy • 3 independent layers</text>
+          <text class="title" x="601" y="608">✕ Overwrite blocked</text>
+          <text class="sub" x="601" y="623">Client hook • tool-server authz • Postgres roles</text>
+          <text class="sub" x="601" y="638">Never a one-step overwrite of live</text>
+        </g>
+        <g class="node" data-node="human" tabindex="0" role="button" aria-label="Human approval via SNS email" style="--hx:1">
+          <rect class="main" x="22" y="670" width="220" height="64" rx="10" style="fill:var(--ok-soft);stroke:var(--ok)"/>
+          <text class="tag" x="36" y="688">Human • SNS email</text>
+          <text class="title" x="36" y="706">Human approves</text>
+          <text class="sub" x="36" y="721">No approval, no swap</text>
+        </g>
+        <g class="node ok" data-node="endpoint" tabindex="0" role="button" aria-label="Approve endpoint">
+          <rect class="main" x="282" y="670" width="220" height="64" rx="10"/>
+          <text class="tag" x="296" y="688">Lambda Function URL</text>
+          <text class="title" x="296" y="706">Approve endpoint</text>
+          <text class="sub" x="296" y="721">Confirm page + one-time token</text>
+        </g>
+        <g class="node ok" data-node="dashboard" tabindex="0" role="button" aria-label="Dashboard outcome">
+          <rect class="main" x="587" y="670" width="371" height="64" rx="10"/>
+          <text class="tag" x="601" y="688">Outcome • Publisher λ → S3 + CloudFront</text>
+          <text class="title" x="601" y="706">Dashboard correct ✓ by 08:00</text>
+          <text class="sub" x="601" y="721">Publishes after Verifier sign-off • X-Ray trace</text>
+        </g>
+
+        <circle id="packet" cx="22" cy="72" r="7" fill="#2457C5" stroke="white" stroke-width="2" opacity="0"/>
+      </svg>
+    </div>
+
+    <div class="legend">
+      <span><i class="sw a"></i> Agent (Strands)</span>
+      <span><i class="sw s"></i> AWS managed / storage</span>
+      <span><i class="sw g"></i> Approved / verified</span>
+      <span><i class="sw r"></i> Blocked / failed</span>
+      <span><i class="sw t"></i> Trust boundary</span>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:12px">Agents never get DB credentials — MCP tools do, and the tool server authorises each agent.</span>
+    </div>
+  </section>
+
+  <!-- DETAIL + STEPS -->
+  <div class="grid2">
+    <article class="card detail" id="detailCard">
+      <p class="kicker">Tap a box — what it does</p>
+      <div id="detailContent"></div>
+    </article>
+
+    <article class="card">
+      <p class="kicker">The replay • The incident in 12 beats</p>
+      <h2>02:00 to 08:00, in order</h2>
+      <ol class="steps-list" id="stepsList"></ol>
+    </article>
+  </div>
+
+  <!-- AGENTS -->
+  <section class="section" aria-labelledby="agents-h">
+    <div class="section-head">
+      <div>
+        <p class="kicker">The team</p>
+        <h2 id="agents-h">Four specialists, one coordinator — hub-and-spoke</h2>
+      </div>
+      <p style="color:var(--muted);font-size:14px;max-width:44ch;margin:0">Same Strands runtime, different system prompt and tool allow-list — and the allow-list is enforced by the tool server per agent identity, not just by the runtime. Every handoff passes through the Orchestrator.</p>
+    </div>
+    <div class="agents" id="agentCards"></div>
+  </section>
+
+  <!-- DATA -->
+  <section class="section" aria-labelledby="data-h">
+    <p class="kicker">Data • Four stores, one job each</p>
+    <h2 id="data-h" style="font-size:24px;margin:6px 0 0;letter-spacing:-.02em">Why this shape keeps you under $10/month</h2>
+    <div class="three">
+      <article class="card store">
+        <p class="kicker">Raw files</p>
+        <h3 style="margin-top:6px">S3 — <code>…-raw</code></h3>
+        <p>Nightly extracts as they arrived — each file is a <strong>delta</strong> (new and changed rows), kept 7 days then lifecycle-expired. The renamed column is visible in the file itself, which is what makes the incident reproducible.</p>
+        <p style="margin-top:8px"><code>s3://…/raw/dt=2026-11-18/customers.csv</code></p>
+      </article>
+      <article class="card store">
+        <p class="kicker">Analytics + RAG</p>
+        <h3 style="margin-top:6px">PostgreSQL + pgvector</h3>
+        <p><code>customers</code> (live), <code>customers_test</code> (sandbox), <code>customers_prev</code> (kept after a swap, for rollback) and <code>documents</code> (runbook + contract chunks, <code>vector(1024)</code>) in one database.</p>
+        <p style="margin-top:8px"><strong>How RAG flows:</strong> Diagnoser asks → MCP <code>search_runbook</code> embeds the question → pgvector returns the nearest chunks → Diagnoser answers citing them. No chunk, no claim.</p>
+      </article>
+      <article class="card store">
+        <p class="kicker">Memory</p>
+        <h3 style="margin-top:6px">DynamoDB — <code>apa-memory</code></h3>
+        <p>Short-term: this run's findings. Long-term: past incidents and fixes — e.g. September's rename, where the fix was <em>update the mapping, don't rebuild</em>. Agents read and write it. It holds no approvals.</p>
+      </article>
+      <article class="card store">
+        <p class="kicker">Approvals</p>
+        <h3 style="margin-top:6px">DynamoDB — <code>apa-approvals</code></h3>
+        <p>A separate table in a separate trust boundary. Only the approve endpoint can write to it; agent roles and the memory client cannot. <code>swap_tables()</code> reads it and refuses unless a record matches this incident and this test copy, is unexpired, and is unused.</p>
+      </article>
+    </div>
+
+    <div class="safety">
+      <article class="card">
+        <div class="big">🛡️</div>
+        <h3>Guardrails are code, not a prompt</h3>
+        <p>The Fixer's first idea — rebuild live from S3 — would trade 3 years for 7 days. Three layers refuse it independently: a client-side hook, the tool server (which knows which agent is calling), and the Postgres role the Fixer connects with. In the build, Phase 4 forces this attempt rather than waiting for the model to try it.</p>
+      </article>
+      <article class="card">
+        <div class="big">🧪</div>
+        <h3>Sandbox, then check, then ask</h3>
+        <p>The fix is built in <code>customers_test</code> — a clone of live plus tonight's file. The same 4 checks the Verifier will run on live run on the test copy first, and the result goes in the approval email. Only a test copy that passes can request approval.</p>
+      </article>
+      <article class="card">
+        <div class="big">✋</div>
+        <h3>Approval is enforced by the tool — and reversible</h3>
+        <p><code>swap_tables()</code> checks <code>apa-approvals</code> itself, in a store no agent can write. If nobody approves, the wait times out and live is untouched. The swap is one atomic rename that keeps <code>customers_prev</code>, so a failed post-swap check rolls back.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- CHANGES -->
+  <section class="section changes" aria-labelledby="changes-h">
+    <p class="kicker">What changed • v1.1 vs plan v1.0</p>
+    <h2 id="changes-h" style="font-size:24px;margin:6px 0 0;letter-spacing:-.02em">Corrections this page makes — the plan and guide need the same edits</h2>
+    <div class="grid2" style="grid-template-columns:1.25fr .75fr">
+      <article class="card">
+        <ul>
+          <li><strong>Hub-and-spoke.</strong> Every handoff passes through the Orchestrator, which validates it. The agents no longer pass work to each other directly.</li>
+          <li><strong>Failure path.</strong> Step Functions catches the Lambda failure and invokes the Orchestrator (the arrow used to start at the Lambda).</li>
+          <li><strong>Approvals live in their own table</strong> (<code>apa-approvals</code>), writable only by the approve endpoint. Before, they sat in agent memory, so an agent with write access could approve itself.</li>
+          <li><strong>New component: approve endpoint</strong> (Lambda Function URL). The email link opens a confirmation page and approving needs a deliberate click with a signed, single-use token, so link-prefetching email scanners can't approve.</li>
+          <li><strong>Approval is bound</strong> to the incident, the test copy's hash and an expiry, and is single-use.</li>
+          <li><strong>Step Functions holds the wait</strong> (<code>waitForTaskToken</code>). No agent Lambda sits waiting, so the 15-minute Lambda limit isn't hit by an 18-minute human.</li>
+          <li><strong>Verifier runs twice.</strong> On the test copy before approval, and on live after the swap. A failed post-swap check rolls back to <code>customers_prev</code>.</li>
+          <li><strong>Write protection</strong> is hook + tool-server authorisation per agent + Postgres roles. IAM doesn't control Postgres writes (and does nothing on local Docker), so it's no longer drawn as a layer.</li>
+          <li><strong>Verifier no longer touches Postgres directly</strong> — it goes through MCP like every other agent.</li>
+          <li><strong>Load semantics pinned.</strong> Files are deltas; live keeps the contract column <code>cust_status</code>; the fix is mapping v2 (<code>customer_status → cust_status</code>), published with the swap so tomorrow's load passes. Check 1 = live-before + file rows; check 4 = a sample of the file matches what landed.</li>
+          <li><strong>Dashboard publisher.</strong> A static S3 site can't query Postgres, so a publisher Lambda writes it after sign-off.</li>
+          <li><strong>Bedrock.</strong> Model access is automatic now; Phase 0 should confirm which Nova Micro ID works in Sydney (it may need the <code>apac.</code> inference profile).</li>
+          <li><strong>Phase 8.</strong> Delete the RDS instance rather than stop it (a stopped instance restarts itself after 7 days), and price NAT or VPC endpoints for the demo day.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <p class="kicker" style="color:var(--warn)">Decision needed</p>
+        <h3 style="margin-top:6px">Where do Phases 1–7 run?</h3>
+        <p>Plan v1.0 keeps Postgres in Docker on your Mac but deploys Lambdas only through GitHub. A cloud Lambda can't reach your Mac, so the deployed topology drawn above only works from Phase 8.</p>
+        <p><strong>Recommended:</strong> run the pipeline job, agent runtime and MCP tool servers on your Mac with <code>uv</code> against Docker Postgres. Bedrock, S3, DynamoDB, SNS and X-Ray are the real AWS services via the <code>apa</code> profile. Phase 8 deploys the same code to Lambda and RDS.</p>
+        <p><strong>Alternative:</strong> a database Lambda can reach from day one. It costs NAT or VPC endpoints, which the plan's budget doesn't include.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- DEPLOY -->
+  <section class="deploy" aria-label="Deployment and cost">
+    <div>
+      <p class="kicker" style="color:#9AB6F5">How it ships • No new repo, one new build step</p>
+      <h2 style="margin:6px 0 0;font-size:20px">Deployed through the pipeline you already have</h2>
+      <div class="flowline">
+        <span class="box">GitHub • kazinayeem-eng/aws-data-platform</span><span class="arr">→</span>
+        <span class="box">Actions (OIDC)</span><span class="arr">→</span>
+        <span class="box">CloudFormation</span><span class="arr">→</span>
+        <span class="box">dev → prod</span>
+      </div>
+      <p>CLI profile <code>apa</code> • Local Postgres user/db <code>apa / assurance</code> • uv for packaging (ADR-009), with a build-zip-and-upload step added to <code>deploy.yml</code>. Every step traced in CloudWatch + X-Ray — one trace per incident, replayable end to end.</p>
+    </div>
+    <div class="cost">
+      <span>While building</span>
+      <strong>$1–3 / mo</strong>
+      <span style="text-transform:none;letter-spacing:0;font-family:var(--font)">Bedrock tokens + S3<br>RDS demo day only, then deleted</span>
+    </div>
+  </section>
+
+  <div class="foot">
+    <span>v1.1 proposes corrections to plan v1.0 (18 Nov 2026) — 9 phases, 20 terms, 10 ADRs. The plan and the learning guide need the edits listed above before they agree with this page.</span>
+    <span style="font-family:var(--mono);font-size:12px">20 terms → Phases 1–7 • Evals: 20-case set in Phase 5</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var DETAILS = {
+    scheduler:{role:'Trigger • EventBridge Scheduler',title:'Fires once a night, at 02:00',body:'No polling, no server waiting. Scheduler starts Step Functions, which starts the load. If nothing fails, no agent ever wakes up — and you pay nothing for agents that night.',list:['<strong>Cron:</strong> nightly 02:00 (Sydney time zone)','<strong>Cost:</strong> essentially $0 at one run/day','<strong>Phase:</strong> Phase 1 — pipeline before agents']},
+    stepfunctions:{role:'Workflow • Step Functions',title:'Owns the pipeline — and the approval wait',body:'Runs ingest → transform → load, records each state, and when the load fails it catches the error and invokes the Orchestrator. When a live change needs a human it also holds the wait: a <code>waitForTaskToken</code> step pauses the workflow with nothing running (so no 15-minute Lambda limit) until the approve endpoint resumes it or the timeout expires.',list:['<strong>On success:</strong> run ends, dashboard is fresh','<strong>On failure:</strong> invokes Orchestrator with job + timestamp','<strong>Approval wait:</strong> SNS email out, task token held; timeout (e.g. 2 hours) leaves live untouched and the incident open']},
+    lambda:{role:'Compute • Lambda',title:'Ingest + transform — the job that actually breaks',body:'Reads tonight’s CSV delta from S3, maps columns using a versioned mapping (v1 expects <code>cust_status</code>), and writes to <code>customers</code>. At 02:14 it looks for that column, finds <code>customer_status</code> instead, and stops. That stop is correct — loading wrong data would be worse.',list:['<strong>Language:</strong> Python, packaged with <code>uv</code>','<strong>Failure:</strong> <code>Column cust_status not found</code> — schema drift','<strong>Agents don’t edit this code</strong> — the fix is a new mapping version, published through an approval-gated tool']},
+    s3:{role:'Storage • S3 raw',title:'The raw file, exactly as it arrived',body:'Keeps 7 days of nightly extracts. Each file is a delta — new and changed rows, not a snapshot — so 7 days of files is not 3 years of history. Any “fix” that rebuilds live from S3 alone destroys history, which is why the guardrail blocks it.',list:['<strong>Bucket:</strong> <code>agentic-pipeline-assurance-raw</code>','<strong>Retention:</strong> 7 days, lifecycle expiry','<strong>Key:</strong> <code>raw/dt=YYYY-MM-DD/customers.csv</code>']},
+    postgres:{role:'Analytics • PostgreSQL + pgvector',title:'Live table, test copy, rollback copy and vectors — one database',body:'Holds <code>customers</code> (3 years, ~1.2M rows, columns follow data contract v3 — including <code>cust_status</code>), <code>customers_test</code> (sandbox), <code>customers_prev</code> (the old live table after a swap) and <code>documents</code> with embeddings. One DB to learn and pay for, instead of a separate vector store (OpenSearch Serverless alone would be ~$70/mo).',list:['<strong>Write control is Postgres roles</strong>, not IAM: the pipeline role loads live; the Fixer’s role can only write <code>customers_test</code>; the swap runs as a separate role reachable only through <code>swap_tables</code>','<strong>Dev:</strong> Docker on your Mac (see “Decision needed” below)','<strong>Demo:</strong> RDS in Phase 8, deleted afterwards']},
+    orchestrator:{role:'Orchestrator • Coordinator',title:'The hub — every handoff goes through it',body:'Started by Step Functions when the load fails. Reads the goal — <em>restore the nightly load, lose no data, before 08:00</em> — splits it into tasks, writes a brief for each specialist, validates every handoff before passing work on, and decides when a human must be asked by returning “approval needed” to Step Functions. It never touches data itself.',list:['<strong>Brief (6 items):</strong> schema diff, runbook 4.2, table owner, target (staging), rules, deadline 08:00 — the 40,000 log lines stay out','<strong>Handoff (5 fields):</strong> typed package — <code>done / next / owner / evidence / do-not-touch</code>, validated on receipt','<strong>Tech:</strong> Strands <code>Agent</code>, Bedrock Nova Micro • Phase 6']},
+    detector:{role:'Agent 01 • Detector',title:'Finds what failed, cites the tool result',body:'Perceive → plan → act → observe. Reads the error, plans a schema comparison, calls <code>get_table_schema()</code> and <code>read_job_logs()</code> via MCP, and ends its loop with a finding grounded in what the tools returned — not model text. Its handoff goes back to the Orchestrator, not straight to the next agent.',list:['<strong>Tools:</strong> <code>read_job_logs</code>, <code>get_table_schema</code>','<strong>Finding:</strong> source now has <code>customer_status</code>','<strong>Terms:</strong> Agent Loop, Tool Use, Grounding, MCP']},
+    diagnoser:{role:'Agent 02 • Diagnoser',title:'Explains why — and proves it',body:'Before answering, it searches: RAG retrieves runbook 4.2 (column renames) + data contract v3, and Memory recalls September’s similar rename. Every claim carries a source; a claim with no source is written “unknown”.',list:['<strong>Tools:</strong> <code>search_runbook</code> (pgvector), memory recall','<strong>Evidence:</strong> log 02:14, schema diff, change note 17:40 yesterday','<strong>Terms:</strong> RAG, Memory, Grounding']},
+    fixer:{role:'Agent 03 • Fixer',title:'No direct live write — only a gated swap after approval',body:'Identity <code>fixer-01</code>. Its Postgres role can read production and write only <code>customers_test</code>. Its overwrite idea is blocked, so it re-plans: <code>write_test_copy</code> clones live and loads tonight’s file with mapping v2 (<code>customer_status → cust_status</code>). The one exception is <code>swap_tables</code> (with <code>publish_mapping</code>): the tool server runs it only after a passed test copy <em>and</em> a matching approval record that it checks itself. The swap is one atomic rename and keeps <code>customers_prev</code>.',list:['<strong>Tools:</strong> <code>write_test_copy</code> (staging), <code>swap_tables</code> + <code>publish_mapping</code> (live, approval-gated only)','<strong>Sandbox result:</strong> 1,204,331 rows (1.2M + 4,331), 0 errors','<strong>Terms:</strong> Sandboxing, Guardrails, Identity, Human-in-the-Loop']},
+    verifier:{role:'Agent 04 • Verifier',title:'Checks with a checklist, not a feeling — twice',body:'Runs the same 4 checks first on the test copy (so the approver sees the result) and again on live after the swap: row count = live-before + file rows; columns match contract v3; oldest record (2023-11-14) still there; a 100-row sample from tonight’s file matches what landed. The checks are SQL assertions run by the <code>run_checks</code> tool through MCP. If a post-swap check fails, the swap is reversed from <code>customers_prev</code>.',list:['<strong>Tool:</strong> <code>run_checks</code> (read-only)','<strong>Result tonight:</strong> 4 / 4 pass, before and after','<strong>Terms:</strong> Evaluation (Evals), Observability']},
+    human:{role:'Human-in-the-Loop • SNS → email',title:'The pause most tutorials skip',body:'Policy: any live-table change needs a human. Step Functions emails the on-call engineer (you, wearing your second hat) via SNS with what broke, what was tested, the 4/4 pre-check, and exactly what will change. The link opens a confirmation page — it never approves on a bare click, so a mail scanner that prefetches links can’t approve. Approved 02:52.',list:['<strong>Payload:</strong> cause + test evidence + exact swap + mapping v2','<strong>Decision:</strong> APPROVED 02:52','<strong>Timeout path:</strong> live table left alone, incident stays open']},
+    endpoint:{role:'Approve endpoint • Lambda Function URL',title:'The only door into the approvals table',body:'Serves the confirmation page, accepts the click (POST, signed one-time token), writes the approval record to <code>apa-approvals</code>, and tells Step Functions to resume. It is plain code — no model, and no agent can call it.',list:['<strong>Record:</strong> incident id, approver, SHA of the test copy, the exact swap, expiry, used = false','<strong>Token:</strong> signed, single-use, expires','<strong>Cost:</strong> Function URL is free; Lambda free tier covers it']},
+    approvals:{role:'Approvals • DynamoDB apa-approvals',title:'Separate table, separate trust boundary',body:'Agent roles (and the memory client) have no write access to this table — enforced by IAM on the table itself. <code>swap_tables()</code> reads it and refuses unless a record matches this incident and this test copy, is unexpired, and is unused. It marks the record used when the swap runs.',list:['<strong>Table:</strong> <code>apa-approvals</code>','<strong>Keys:</strong> <code>PK=approval#&lt;incident&gt;</code>','<strong>Why separate:</strong> memory is written by agents; approvals must not be']},
+    bedrock:{role:'Model • Amazon Bedrock',title:'Nova Micro by default — cheap enough to learn on',body:'Hosted API, no fine-tuning, no model to version — you version prompts and code in Git instead. Every agent reasons through it at every step, which is why it sits on the Strands bus rather than on one arrow. Claude Haiku is used for one comparison run in Phase 7 so evals can show the cost/quality trade-off with numbers.',list:['<strong>Default:</strong> Nova Micro (ADR-002)','<strong>Access:</strong> serverless models are enabled automatically now; Anthropic models need a one-time use-case form','<strong>Phase 0 check:</strong> which Nova Micro ID works in Sydney — the base ID or an <code>apac.</code> inference profile']},
+    mcp:{role:'Tools • MCP / FastMCP',title:'Agents never get DB credentials. Tools do — and the server checks who is calling.',body:'Every agent-to-system connection goes through MCP in the same standard shape. Each agent connects with its own identity, and the tool server enforces that agent’s allow-list itself; the runtime’s tool registry is a convenience, not the security boundary. Each tool returns data, never prose. An agent that guesses instead of calling a tool is a bug.',list:['<strong>Tools:</strong> <code>read_job_logs</code>, <code>get_table_schema</code>, <code>search_runbook</code>, <code>write_test_copy</code>, <code>run_checks</code>, <code>swap_tables</code>, <code>publish_mapping</code>','<strong>Gated:</strong> <code>swap_tables</code> and <code>publish_mapping</code> read <code>apa-approvals</code> themselves','<strong>Terms:</strong> MCP, Tool Use, Agent Protocols, A2A between agents']},
+    rag:{role:'Knowledge • RAG — PostgreSQL + pgvector',title:'Retrieval: the model reads the runbook, it doesn’t remember it',body:'Runbooks and the data contract are chunked and embedded into the <code>documents</code> table (<code>vector(1024)</code>) in the same Postgres as the analytics tables — no separate vector store to pay for. In step 4 the flow is drawn end to end: Diagnoser → MCP <code>search_runbook</code> → pgvector returns runbook 4.2 + contract v3 chunks → Diagnoser reasons over that text and cites it.',list:['<strong>Flow:</strong> Diagnoser → <code>search_runbook</code> (MCP) → pgvector → chunks back','<strong>Grounding rule:</strong> a claim with no retrieved source is written “unknown”','<strong>Term:</strong> RAG (Retrieval-Augmented Generation) • Phase 3']},
+    dynamodb:{role:'Memory • DynamoDB apa-memory',title:'Notepad tonight, filing cabinet long-term',body:'Short-term: this run’s findings (error line, schema diff). Long-term: past incidents — <code>PK=lesson#sept-rename</code> — and the trace index (X-Ray trace id per step). Agents read and write this table, which is exactly why approvals are not stored in it.',list:['<strong>Table:</strong> <code>apa-memory</code>','<strong>Keys:</strong> <code>PK=incident#… / SK=note#…</code>','<strong>Terms:</strong> Memory, Observability']},
+    guardrails:{role:'Safety • Guardrails + Policy Layer',title:'A guardrail is “never”. A policy is “yes, if…”.',body:'Guardrail: never overwrite a live table in one step — hard block, no override. Policy: live writes require human approval — conditional. Three independent layers enforce them: (1) a client-side hook blocks before the call lands; (2) the tool server authorises each agent by identity; (3) the Fixer’s Postgres role cannot write <code>customers</code> at all. None of it relies on asking the model to behave.',list:['<strong>Tonight:</strong> overwrite attempt BLOCKED, logged, live table byte-identical','<strong>In the build:</strong> Phase 4 forces the attempt so the block is provable, instead of hoping the model tries it','<strong>Terms:</strong> Guardrails, Policy Layer, Agent Identity']},
+    sandbox:{role:'Sandbox • customers_test',title:'A flight simulator for the fix',body:'Built as a clone of live plus tonight’s file, loaded with the corrected mapping: 1,200,000 live rows + 4,331 new = 1,204,331, 0 errors. Crash as often as you like — live is untouched, proven by row count + hash before and after. After the swap, the old live table stays as <code>customers_prev</code> for rollback.',list:['<strong>Result:</strong> 1,204,331 rows, 0 errors','<strong>Live during test:</strong> untouched (verified)','<strong>Term:</strong> Sandboxing (Phase 4)']},
+    dashboard:{role:'Outcome • Publisher + Observability',title:'By 08:00 — correct numbers, full record',body:'A static site on S3 + CloudFront can’t query Postgres, so after the Verifier signs off a publisher Lambda writes the verified numbers to it. Behind it: one X-Ray trace per incident — who acted, which tool, what came back, who approved — replayable end to end. That trace is your portfolio proof.',list:['<strong>Checks:</strong> 4/4 pass on live, history intact','<strong>Trace:</strong> CloudWatch + X-Ray, OTel emitter','<strong>Terms:</strong> Agent Observability, Agentic Pipeline']}
+  };
+
+  // Each flow: [from box, to box]. Steps light exactly the boxes their paths join, so nothing is highlighted off-path.
+  var PATH_NODES = {
+    'p-sched':['scheduler','stepfunctions'],
+    'p-step-lambda':['stepfunctions','lambda'],
+    'p-err':['lambda','stepfunctions'],
+    'p-s3-lambda':['s3','lambda'],
+    'p-lambda-pg':['lambda','postgres'],
+    'p-sf-orch':['stepfunctions','orchestrator'],
+    'p-orch-det':['orchestrator','detector'],
+    'p-orch-diag':['orchestrator','diagnoser'],
+    'p-orch-fix':['orchestrator','fixer'],
+    'p-orch-ver':['orchestrator','verifier'],
+    'p-det-mcp':['detector','mcp'],
+    'p-diag-mcp':['diagnoser','mcp'],
+    'p-fix-mcp':['fixer','mcp'],
+    'p-ver-mcp':['verifier','mcp'],
+    'p-mcp-rag':['mcp','rag'],
+    'p-mcp-mem':['mcp','dynamodb'],
+    'p-mcp-sandbox':['mcp','sandbox'],
+    'p-appr-check':['approvals','mcp'],
+    'p-mcp-pg':['mcp','postgres'],
+    'p-fix-guard':['fixer','guardrails'],
+    'p-wait':['stepfunctions','human'],
+    'p-human-endpoint':['human','endpoint'],
+    'p-endpoint-approvals':['endpoint','approvals'],
+    'p-ver-dash':['verifier','dashboard']
+  };
+
+  // A leading "~" plays the flow backwards (the handoff coming back up to the Orchestrator).
+  var STEPS = [
+    {time:'02:00', title:'The nightly load starts', desc:'EventBridge fires at 02:00 and Step Functions starts the pipeline. Lambda reads tonight’s file from S3 (the arrow runs S3 → Lambda: a read), then writes to Postgres along the lane beneath.', paths:['p-sched','p-step-lambda','p-s3-lambda','p-lambda-pg'], detail:'lambda'},
+    {time:'02:14', title:'Transform fails — schema drift', desc:'Lambda looks for cust_status, finds customer_status, and stops — correct, because loading wrong data would be worse. Step Functions catches the error and invokes the Orchestrator with the job and timestamp. On a good night no agent ever runs.', paths:['p-err','p-sf-orch'], detail:'stepfunctions'},
+    {time:'02:15', title:'Detector finds what failed', desc:'The Orchestrator briefs the Detector (6 items, not 40,000 log lines). The Detector calls read_job_logs and get_table_schema through MCP, and the tool server checks it is allowed to. Finding: the source renamed the column yesterday at 17:40.', paths:['p-orch-det','p-det-mcp'], detail:'detector'},
+    {time:'02:17', title:'Diagnoser explains why, with evidence', desc:'The Detector’s handoff comes back through the Orchestrator, which validates it and briefs the Diagnoser. RAG: search_runbook → pgvector returns runbook 4.2 + contract v3. Memory recalls September’s rename: update the mapping, don’t rebuild.', paths:['~p-orch-det','p-orch-diag','p-diag-mcp','p-mcp-rag','p-mcp-mem'], detail:'diagnoser'},
+    {time:'02:21', title:'Fixer tries the fast way — BLOCKED', desc:'Cause + evidence go back through the Orchestrator to the Fixer. Its first idea, rebuild live from S3, would swap 3 years for 7 days. Follow the red arrow: the guardrail blocks it, logs it, and live is unchanged. The Fixer must re-plan. This block is the system working.', paths:['~p-orch-diag','p-orch-fix','p-fix-guard'], detail:'guardrails'},
+    {time:'02:34', title:'Fixer tests the real fix in the sandbox', desc:'write_test_copy clones live into customers_test and loads tonight’s file with mapping v2 (customer_status → cust_status): 1,200,000 + 4,331 = 1,204,331 rows, 0 errors. Live is untouched, proven by count + hash.', paths:['p-fix-mcp','p-mcp-sandbox'], detail:'sandbox'},
+    {time:'02:38', title:'Verifier checks the test copy first', desc:'Before anyone is asked to approve, the Verifier runs the 4 checks on customers_test through MCP: row count, columns vs contract v3, oldest record 2023-11-14 intact, 100-row sample from tonight’s file. 4/4 pass, and the result goes in the approval email.', paths:['~p-orch-fix','p-orch-ver','p-ver-mcp','p-mcp-sandbox'], detail:'verifier'},
+    {time:'02:40', title:'Approval requested — the workflow pauses', desc:'The Orchestrator returns “approval needed” to Step Functions, which sends the SNS email (what broke, what was tested, 4/4, exactly what changes) and pauses on waitForTaskToken. No Lambda is waiting, and a timeout leaves live alone.', paths:['~p-orch-ver','~p-sf-orch','p-wait'], detail:'human'},
+    {time:'02:52', title:'Human approves — through the one door', desc:'The link opens a confirmation page, so a scanner prefetching the email can’t approve. The click goes to the approve endpoint, which writes a single-use record to apa-approvals, bound to this incident, the test copy’s hash and an expiry. No agent has a write path to that table.', paths:['p-human-endpoint','p-endpoint-approvals'], detail:'endpoint'},
+    {time:'03:01', title:'Swap: test copy goes live', desc:'Step Functions resumes the Orchestrator, which tells the Fixer to run swap_tables. The tool reads apa-approvals itself: no matching, unexpired, unused record, no swap. Found, so it renames customers_test → customers in one transaction, keeps the old table as customers_prev, and publishes mapping v2. However confident the agent is, the tool decides.', paths:['p-sf-orch','p-orch-fix','p-fix-mcp','p-appr-check','p-mcp-sandbox','p-mcp-pg'], detail:'approvals'},
+    {time:'03:05', title:'Verifier checks live — 4/4 pass', desc:'The Fixer’s handoff goes through the Orchestrator to the Verifier, which re-runs the 4 checks on the live table through MCP. 4/4 pass, so the incident closes. Had any failed, the swap would be reversed from customers_prev and the incident left open.', paths:['~p-orch-fix','p-orch-ver','p-ver-mcp','p-mcp-pg'], detail:'verifier'},
+    {time:'03:06', title:'Dashboard correct, trace recorded', desc:'On sign-off a publisher Lambda writes the verified numbers to the static dashboard (S3 + CloudFront can’t query Postgres, so something has to publish). By 08:00 executives see correct numbers, and tomorrow’s load passes on mapping v2. One X-Ray trace records who acted, which tool, what came back, who approved.', paths:['p-ver-dash'], detail:'dashboard'}
+  ];
+  STEPS.forEach(function(s){
+    var set = {};
+    s.paths.forEach(function(p){
+      var pn = PATH_NODES[p.replace('~','')];
+      if(!pn){ if(window.console) console.warn('Unknown flow: '+p); return; }
+      pn.forEach(function(n){ set[n] = 1; });
+    });
+    s.nodes = Object.keys(set);
+  });
+  window.__apa = { PATH_NODES: PATH_NODES, STEPS: STEPS };
+
+  var AGENTS = [
+    {id:'orchestrator', n:'Coordinator', name:'Orchestrator', desc:'The hub. Briefs each specialist (6 items), validates every handoff, and asks for a human by returning “approval needed”.', tools:'Strands • Bedrock\nvalidates handoffs'},
+    {id:'detector', n:'Agent 01', name:'Detector', desc:'Finds what failed and where. Ends when the cause is locatable.', tools:'read_job_logs\nget_table_schema'},
+    {id:'diagnoser', n:'Agent 02', name:'Diagnoser', desc:'Explains why, grounded in runbook + memory. No source = “unknown”.', tools:'search_runbook\nmemory recall'},
+    {id:'fixer', n:'Agent 03', name:'Fixer', desc:'Builds the fix in the sandbox. No direct live write — live only via the approval-gated swap after the test passes.', tools:'write_test_copy\nswap_tables + publish_mapping (gated)'},
+    {id:'verifier', n:'Agent 04', name:'Verifier', desc:'Checks twice: the test copy before approval, live after the swap. Also runs the eval set.', tools:'run_checks\n20-case evals'}
+  ];
+
+  var cur = 0, playing = false, timer = null, animId = null, animToken = 0;
+  var packet = document.getElementById('packet');
+  var nowBox = document.getElementById('nowBox');
+  var wrap = document.getElementById('diagramWrap');
+  var svg = document.getElementById('diagram');
+  var flows = Array.prototype.slice.call(document.querySelectorAll('.flow'));
+  var nodes = Array.prototype.slice.call(document.querySelectorAll('.node'));
+  flows.forEach(function(f){ f._me = f.getAttribute('marker-end'); f._ms = f.getAttribute('marker-start'); });
+
+  function activate(el){ el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } }); }
+
+  // Progress dots
+  var prog = document.getElementById('progress');
+  STEPS.forEach(function(s,i){
+    var b=document.createElement('button'); b.className='pdot'; b.type='button'; b.setAttribute('aria-label','Go to step '+(i+1)+': '+s.title);
+    b.addEventListener('click',function(){ pause(); setStep(i); });
+    prog.appendChild(b);
+  });
+  // Steps list (keyboard accessible)
+  var list = document.getElementById('stepsList');
+  STEPS.forEach(function(s,i){
+    var li=document.createElement('li'); li.tabIndex=0; li.setAttribute('role','button');
+    li.innerHTML='<span class="stime">'+s.time+'</span><span><span class="stitle">'+s.title+'</span><br><span class="sdesc">'+s.desc+'</span></span>';
+    li.addEventListener('click',function(){ pause(); setStep(i); document.querySelector('.stage').scrollIntoView({behavior: reduce?'auto':'smooth', block:'start'}); });
+    activate(li);
+    list.appendChild(li);
+  });
+  // Agent cards
+  var ac = document.getElementById('agentCards');
+  AGENTS.forEach(function(a){
+    var b=document.createElement('button'); b.className='agent-card'; b.type='button'; b.dataset.agent=a.id;
+    b.innerHTML='<span class="agent-num">'+a.n.toUpperCase()+'</span><h3>'+a.name+'</h3><p>'+a.desc+'</p><div class="tools">'+a.tools.replace(/\n/g,'<br>')+'</div>';
+    b.addEventListener('click',function(){ inspect(a.id); });
+    ac.appendChild(b);
+  });
+
+  function showDetail(id){
+    var d = DETAILS[id]; if(!d) return;
+    document.getElementById('detailContent').innerHTML =
+      '<p class="role">'+d.role+'</p><h3>'+d.title+'</h3><p>'+d.body+'</p><ul>'+d.list.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>';
+  }
+  function highlightAgents(id){
+    document.querySelectorAll('.agent-card').forEach(function(c){ c.classList.toggle('active', c.dataset.agent===id); });
+  }
+
+  function setFlow(f, on){
+    f.classList.toggle('active', on);
+    var neutral = !f.classList.contains('badflow') && !f.classList.contains('okflow');
+    if(!neutral) return;
+    if(f._me) f.setAttribute('marker-end', on ? f._me.replace('#arrow)','#arrowBlue)') : f._me);
+    if(f._ms) f.setAttribute('marker-start', on ? f._ms.replace('#arrow)','#arrowBlue)') : f._ms);
+  }
+  function stopPacket(){ animToken++; if(animId) cancelAnimationFrame(animId); packet.setAttribute('opacity','0'); }
+
+  function animateSequence(pathIds){
+    var token = ++animToken;
+    if(animId) cancelAnimationFrame(animId);
+    if(reduce || !pathIds.length){ packet.setAttribute('opacity','0'); return; }
+    var idx = 0;
+    function hop(){
+      if(token !== animToken) return;
+      if(idx >= pathIds.length){ setTimeout(function(){ if(token===animToken) packet.setAttribute('opacity','0'); }, 300); return; }
+      var raw = pathIds[idx], rev = raw.charAt(0)==='~';
+      var path = document.getElementById(rev ? raw.slice(1) : raw);
+      if(!path){ idx++; hop(); return; }
+      var len = path.getTotalLength(), start = null;
+      var dur = Math.max(320, Math.min(750, len * 1.1));
+      packet.setAttribute('opacity','1');
+      function frame(ts){
+        if(token !== animToken) return;
+        if(!start) start = ts;
+        var t = Math.min(1, (ts - start) / dur);
+        var pt = path.getPointAtLength((rev ? 1 - t : t) * len);
+        packet.setAttribute('cx', pt.x); packet.setAttribute('cy', pt.y);
+        if(t < 1){ animId = requestAnimationFrame(frame); }
+        else { idx++; setTimeout(hop, 70); }
+      }
+      animId = requestAnimationFrame(frame);
+    }
+    hop();
+  }
+
+  // On narrow screens the diagram scrolls sideways; keep the action in view.
+  function followAction(ids){
+    if(wrap.scrollWidth <= wrap.clientWidth + 4 || !ids.length) return;
+    var scale = svg.getBoundingClientRect().width / 980, minx = 1e9, maxx = -1e9;
+    ids.forEach(function(id){
+      var g = document.querySelector('.node[data-node="'+id+'"] rect.main'); if(!g) return;
+      var b = g.getBBox(); minx = Math.min(minx, b.x); maxx = Math.max(maxx, b.x + b.width);
+    });
+    if(minx > maxx) return;
+    var target = ((minx + maxx) / 2) * scale - wrap.clientWidth / 2;
+    wrap.scrollTo({left: Math.max(0, target), behavior: reduce ? 'auto' : 'smooth'});
+  }
+
+  function setStep(i){
+    cur = Math.max(0, Math.min(STEPS.length-1, i));
+    var s = STEPS[cur];
+    document.getElementById('nowTime').textContent = s.time;
+    document.getElementById('nowStep').textContent = 'Step '+(cur+1)+' / '+STEPS.length;
+    document.getElementById('nowTitle').textContent = s.title;
+    document.getElementById('nowDesc').textContent = s.desc;
+    var dots = prog.children;
+    for(var k=0;k<dots.length;k++){ dots[k].className='pdot'+(k<cur?' done':k===cur?' cur':''); }
+    var lis = list.children;
+    for(var j=0;j<lis.length;j++){ lis[j].classList.toggle('cur', j===cur); }
+    nodes.forEach(function(n){
+      var active = s.nodes.indexOf(n.getAttribute('data-node')) > -1;
+      n.classList.toggle('is-active', active);
+      n.classList.toggle('is-dim', !active);
+    });
+    var lit = s.paths.map(function(p){ return p.replace('~',''); });
+    flows.forEach(function(f){ setFlow(f, lit.indexOf(f.id) > -1); });
+    showDetail(s.detail);
+    highlightAgents(s.detail);
+    animateSequence(s.paths);
+    followAction(s.nodes);
+    document.getElementById('prevBtn').disabled = cur===0;
+    document.getElementById('nextBtn').disabled = cur===STEPS.length-1;
+  }
+
+  // Tapping a box or card: stop the replay and show just that box, with no stale arrows left running.
+  function inspect(id){
+    pause();
+    stopPacket();
+    flows.forEach(function(f){ setFlow(f, false); });
+    nodes.forEach(function(x){ var on = x.getAttribute('data-node')===id; x.classList.toggle('is-active', on); x.classList.toggle('is-dim', !on); });
+    showDetail(id);
+    highlightAgents(id);
+  }
+
+  function stepDelay(){ return Math.max(3800, 1400 + STEPS[cur].paths.length * 880); }
+  function scheduleNext(){
+    if(!playing) return;
+    timer = setTimeout(function(){
+      if(!playing) return;
+      if(cur >= STEPS.length-1){ pause(); return; }
+      setStep(cur+1); scheduleNext();
+    }, stepDelay());
+  }
+  function play(){
+    if(cur >= STEPS.length-1) cur = 0;
+    playing = true;
+    nowBox.setAttribute('aria-live','off');   // don't announce every step while it autoplays
+    document.getElementById('playLabel').textContent='Pause';
+    document.getElementById('playIco').className='pauseico';
+    setStep(cur);
+    scheduleNext();
+  }
+  function pause(){
+    playing = false;
+    if(timer) clearTimeout(timer); timer = null;
+    nowBox.setAttribute('aria-live','polite');
+    document.getElementById('playLabel').textContent='Play replay';
+    document.getElementById('playIco').className='playico';
+  }
+  document.getElementById('playBtn').addEventListener('click',function(){ playing?pause():play(); });
+  document.getElementById('nextBtn').addEventListener('click',function(){ pause(); setStep(cur+1); });
+  document.getElementById('prevBtn').addEventListener('click',function(){ pause(); setStep(cur-1); });
+  document.getElementById('restartBtn').addEventListener('click',function(){ pause(); setStep(0); });
+
+  nodes.forEach(function(n){
+    n.addEventListener('click', function(){ inspect(n.getAttribute('data-node')); });
+    activate(n);
+  });
+  // Arrow keys step the replay, but never hijack browser shortcuts (e.g. Alt+Left = Back) or form fields.
+  document.addEventListener('keydown',function(e){
+    if(e.altKey||e.ctrlKey||e.metaKey||e.shiftKey) return;
+    var t = e.target && e.target.tagName; if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT') return;
+    if(e.key==='ArrowRight'){ pause(); setStep(cur+1); }
+    if(e.key==='ArrowLeft'){ pause(); setStep(cur-1); }
+  });
+
+  setStep(0);
+  if(!reduce){ setTimeout(function(){ if(!playing) play(); }, 900); }
+})();
+</script>
+</body>
+</html>

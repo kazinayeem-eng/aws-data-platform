@@ -1,0 +1,25 @@
+[project]
+name = "agentic-pipeline-assurance"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Kazi Nayeem", email = "341929870+kazinayeem-eng@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.44.7",
+    "cryptography<49",
+    "fastmcp>=4.2.3",
+    "mcp>=2.3.0",
+    "psycopg[binary]>=3.3.9",
+    "pydantic>=2.14.4",
+    "pytest>=9.2.0",
+    "strands-agents>=1.65.0",
+]
+
+[project.scripts]
+agentic-pipeline-assurance = "agentic_pipeline_assurance:main"
+
+[build-system]
+requires = ["uv_build>=0.13.9,<0.14.0"]
+build-backend = "uv_build"
