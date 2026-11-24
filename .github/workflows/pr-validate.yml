@@ -22,13 +22,13 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: '3.13'
 
       - name: Install linters
-        run: pip install -r requirements-ci.txt
+        run: uv sync --locked
 
       - name: Lint CloudFormation templates
         run: |
