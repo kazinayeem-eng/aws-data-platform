@@ -22,27 +22,27 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: '3.13'
 
       - name: Install linters
-        run: pip install -r requirements-ci.txt
+        run: uv sync --locked
 
       - name: Lint CloudFormation templates
         run: |
           files="$(git ls-files ':(glob)bootstrap/**/*.yml' ':(glob)stacks/**/template.yml')"
           if [ -n "$files" ]; then
             # shellcheck disable=SC2086
-            cfn-lint $files
+            uv run cfn-lint $files
           fi
 
       - name: Scan templates against security policies
         # Start in soft-fail mode, triage the findings, then remove --soft-fail to enforce.
         run: |
           if [ -d stacks ]; then
-            checkov -d stacks --framework cloudformation --quiet --compact --soft-fail
+            uv run checkov -d stacks --framework cloudformation --quiet --compact --soft-fail
           fi
 
   preview:

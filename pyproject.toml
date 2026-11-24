@@ -1,0 +1,18 @@
+[project]
+name = "aws-data-platform"
+version = "0.1.0"
+description = "AWS data platform infrastructure (CloudFormation)"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+# CI linters and policy scanners. uv syncs the "dev" group by default.
+dev = [
+    "cfn-lint==1.60.1",
+    "checkov==3.4.5",
+]
+
+[tool.uv]
+# This repo is infrastructure, not an installable Python package.
+package = false
