@@ -27,23 +27,44 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install linters
+      - name: Install the locked Python tools
         run: uv sync --locked
+
+      - name: Install actionlint and cfn-guard (pinned and checksum-verified)
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          cd "$RUNNER_TEMP"
+          curl -sSfLo actionlint.tgz https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          curl -sSfLo cfn-guard.tgz https://github.com/aws-cloudformation/cloudformation-guard/releases/download/3.4.0/cfn-guard-v3-x86_64-ubuntu-latest.tar.gz
+          sha256sum -c <<'EOF'
+          8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint.tgz
+          2abb404dfc4cd2d58fedbcc85231daaf85f33ab7d255ce329776e8a3080cf1c9  cfn-guard.tgz
+          EOF
+          tar -xzf actionlint.tgz -C bin actionlint
+          tar -xzf cfn-guard.tgz -C bin --strip-components=1 cfn-guard-v3-x86_64-ubuntu-latest/cfn-guard
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - name: Lint CloudFormation templates
         run: |
-          files="$(git ls-files ':(glob)bootstrap/**/*.yml' ':(glob)stacks/**/template.yml')"
-          if [ -n "$files" ]; then
-            # shellcheck disable=SC2086
-            uv run cfn-lint $files
-          fi
+          files="$(git ls-files ':(glob)bootstrap/**/*.yml' ':(glob)projects/*/stacks/*/template.yml')"
+          # shellcheck disable=SC2086
+          uv run cfn-lint $files
 
-      - name: Scan templates against security policies
-        # Start in soft-fail mode, triage the findings, then remove --soft-fail to enforce.
+      - name: Check templates against the Guard rules
         run: |
-          if [ -d stacks ]; then
-            uv run checkov -d stacks --framework cloudformation --quiet --compact --soft-fail
-          fi
+          for file in $(git ls-files ':(glob)bootstrap/**/*.yml' ':(glob)projects/*/stacks/*/template.yml'); do
+            cfn-guard validate --rules guard/ --data "$file" --show-summary fail
+          done
+
+      - name: Check the workflows
+        run: |
+          actionlint
+          uv run zizmor --offline --min-severity medium .github/workflows/
+
+      - name: Check and test the pipeline scripts
+        run: |
+          shellcheck scripts/*.sh tests/*.sh
+          bash tests/pipeline-test.sh
 
   preview:
     name: Preview ${{ matrix.environment }}
@@ -62,9 +83,10 @@ jobs:
           - environment: prod
             account_id: ${{ vars.PROD_ACCOUNT_ID }}
     steps:
-      - name: Check out the code
+      - name: Check out the code (full history, to compare with main)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Print the token subject (diagnostic)
@@ -92,8 +114,13 @@ jobs:
           ORG_PREFIX: ${{ vars.ORG_PREFIX }}
           ENVIRONMENT: ${{ matrix.environment }}
           CFN_ROLE_ARN: arn:aws:iam::${{ matrix.account_id }}:role/${{ vars.ORG_PREFIX }}-cfn-service-${{ matrix.environment }}
+          BASE_REF: origin/${{ github.base_ref }}
         run: |
-          shopt -s nullglob
-          for dir in stacks/*/; do
-            ./scripts/cfn-change.sh preview "$dir" "$ENVIRONMENT"
+          projects="$(./scripts/changed-projects.sh "$BASE_REF")"
+          if [ -z "$projects" ]; then
+            echo "No project changes to preview." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          for project in $projects; do
+            ./scripts/cfn-project.sh preview "$project" "$ENVIRONMENT"
           done

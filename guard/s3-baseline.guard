@@ -1,0 +1,24 @@
+# Rules every S3 bucket in this repository must follow. CI checks every
+# template with them; run them yourself with:
+#   cfn-guard validate --rules guard/ --data <template.yml>
+let buckets = Resources.*[ Type == 'AWS::S3::Bucket' ]
+
+rule s3_buckets_are_encrypted when %buckets !empty {
+    %buckets.Properties.BucketEncryption exists
+}
+
+rule s3_buckets_block_public_access when %buckets !empty {
+    %buckets.Properties.PublicAccessBlockConfiguration.BlockPublicAcls == true
+    %buckets.Properties.PublicAccessBlockConfiguration.BlockPublicPolicy == true
+    %buckets.Properties.PublicAccessBlockConfiguration.IgnorePublicAcls == true
+    %buckets.Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets == true
+}
+
+rule s3_buckets_are_versioned when %buckets !empty {
+    %buckets.Properties.VersioningConfiguration.Status == 'Enabled'
+}
+
+rule s3_buckets_are_retained when %buckets !empty {
+    %buckets.DeletionPolicy == 'Retain'
+    %buckets.UpdateReplacePolicy == 'Retain'
+}
