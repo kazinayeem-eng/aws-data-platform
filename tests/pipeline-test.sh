@@ -100,7 +100,8 @@ printf 'Resources: {}\n' > "$proj/projects/data/stacks/00-bucket/template.yml"
 printf '[]\n' > "$proj/projects/data/stacks/00-bucket/dev.json"
 cd "$proj" || exit 1
 run() {
-  PATH="$bin:$PATH" AWS_LOG="$log" AWS_REGION=ap-southeast-2 ORG_PREFIX=acme \
+  # Empty GITHUB_STEP_SUMMARY so the change table goes to stdout in CI too.
+  GITHUB_STEP_SUMMARY='' PATH="$bin:$PATH" AWS_LOG="$log" AWS_REGION=ap-southeast-2 ORG_PREFIX=acme \
     CFN_ROLE_ARN=arn:aws:iam::111111111111:role/acme-cfn-service-dev scripts/cfn-project.sh "$@"
 }
 out="$(run preview data dev)"
