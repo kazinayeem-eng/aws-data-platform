@@ -1,7 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
-  Organization guardrails (service control policy) for the NonProd and Prod
-  organizational units. Deployed by a human administrator from the management
+  Organization guardrails (service control policies) for the dev and prod
+  accounts, and the budget brake that freezes both accounts when the monthly
+  budget is spent. Deployed by a human administrator from the management
   account in us-east-1. Never deployed by the pipeline.
 
 Parameters:
@@ -16,6 +17,15 @@ Parameters:
   TargetOuIds:
     Type: CommaDelimitedList
     Description: IDs of the NonProd and Prod organizational units (ou-xxxx-xxxxxxxx).
+  BudgetName:
+    Type: String
+    Description: Name of the monthly cost budget the brake watches, for example acme-monthly.
+  BrakeAccountIds:
+    Type: CommaDelimitedList
+    Description: The dev and prod account IDs the brake freezes.
+  AlertEmail:
+    Type: String
+    Description: Email address told when the brake is applied.
 
 Resources:
   BaselineGuardrails:
@@ -83,7 +93,84 @@ Resources:
                   - !Ref PrimaryRegion
                   - us-east-1
 
+  # Not attached to anything until the budget action attaches it. While attached,
+  # everything in the account is denied except people signed in through IAM
+  # Identity Center and the CloudFormation service role, so you can still clean up.
+  BudgetBrake:
+    Type: AWS::Organizations::Policy
+    Properties:
+      Name: !Sub '${OrgPrefix}-budget-brake'
+      Description: Attached by the budget action when actual spend reaches the monthly budget.
+      Type: SERVICE_CONTROL_POLICY
+      Content:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: FreezeEverythingExceptPeopleAndCleanup
+            Effect: Deny
+            Action: '*'
+            Resource: '*'
+            Condition:
+              ArnNotLike:
+                'aws:PrincipalArn':
+                  - 'arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*'
+                  - !Sub 'arn:aws:iam::*:role/${OrgPrefix}-cfn-service-*'
+
+  # Only AWS Budgets, acting for a budget in this account, can use this role.
+  BudgetBrakeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${OrgPrefix}-budget-brake'
+      Description: Lets AWS Budgets attach and detach the budget brake.
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: budgets.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                'aws:SourceAccount': !Ref AWS::AccountId
+              ArnLike:
+                'aws:SourceArn': !Sub 'arn:aws:budgets::${AWS::AccountId}:budget/*'
+      Policies:
+        - PolicyName: attach-budget-brake
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: AttachAndDetachPolicies
+                Effect: Allow
+                Action:
+                  - 'organizations:AttachPolicy'
+                  - 'organizations:DetachPolicy'
+                Resource: '*'
+
+  BudgetBrakeAction:
+    Type: AWS::Budgets::BudgetsAction
+    Properties:
+      BudgetName: !Ref BudgetName
+      NotificationType: ACTUAL
+      ActionType: APPLY_SCP_POLICY
+      ActionThreshold:
+        Type: PERCENTAGE
+        Value: 100
+      ApprovalModel: AUTOMATIC
+      ExecutionRoleArn: !GetAtt BudgetBrakeRole.Arn
+      Definition:
+        ScpActionDefinition:
+          PolicyId: !Ref BudgetBrake
+          TargetIds: !Ref BrakeAccountIds
+      Subscribers:
+        - Type: EMAIL
+          Address: !Ref AlertEmail
+
 Outputs:
   PolicyId:
     Description: ID of the baseline guardrail policy.
     Value: !Ref BaselineGuardrails
+  BudgetBrakePolicyId:
+    Description: ID of the budget brake policy, attached only while the brake is on.
+    Value: !Ref BudgetBrake
+  BudgetBrakeActionId:
+    Description: ID of the budget action, used to release and re-arm the brake.
+    Value: !GetAtt BudgetBrakeAction.ActionId
