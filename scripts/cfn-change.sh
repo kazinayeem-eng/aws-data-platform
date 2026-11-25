@@ -2,26 +2,48 @@
 # Preview or apply one CloudFormation stack through a change set.
 #
 #   scripts/cfn-change.sh preview|apply <stack-dir> <environment>
+#   scripts/cfn-change.sh name <stack-dir> <environment>   (prints the stack name and stops)
 #
-# Expects AWS credentials in the environment, plus:
-#   ORG_PREFIX    short prefix used in stack names (for example: acme)
-#   CFN_ROLE_ARN  CloudFormation service role that creates the resources
+# <stack-dir> must look like projects/<project>/stacks/<NN-name>. The stack is
+# named <ORG_PREFIX>-<environment>-<project>-<name>, so two projects can both
+# have a stack folder called 00-bucket without colliding.
+#
+# Every mode needs ORG_PREFIX (for example: acme). preview and apply also need
+# AWS credentials and a Region in the environment, and CFN_ROLE_ARN, the
+# CloudFormation service role that creates the resources.
 set -euo pipefail
 
-mode="${1:?usage: cfn-change.sh preview|apply <stack-dir> <environment>}"
+mode="${1:?usage: cfn-change.sh preview|apply|name <stack-dir> <environment>}"
 stack_dir="${2:?missing stack directory}"
 env_name="${3:?missing environment}"
 : "${ORG_PREFIX:?ORG_PREFIX is not set}"
-: "${CFN_ROLE_ARN:?CFN_ROLE_ARN is not set}"
 
 case "$mode" in
-  preview|apply) ;;
-  *) echo "mode must be 'preview' or 'apply'" >&2; exit 2 ;;
+  preview|apply|name) ;;
+  *) echo "mode must be 'preview', 'apply' or 'name'" >&2; exit 2 ;;
+esac
+case "$env_name" in
+  dev|prod) ;;
+  *) echo "environment must be 'dev' or 'prod', got: $env_name" >&2; exit 2 ;;
 esac
 
+# The folder decides the stack name: projects/<project>/stacks/<NN->name.
 stack_dir="${stack_dir%/}"
-short_name="$(basename "$stack_dir" | sed -E 's/^[0-9]+-//')"
-stack_name="${ORG_PREFIX}-${env_name}-${short_name}"
+folder_pattern='^(\./)?projects/([a-z][a-z0-9-]{1,19})/stacks/([0-9]+-)?([a-z][a-z0-9-]*)$'
+if [[ ! "$stack_dir" =~ $folder_pattern ]]; then
+  echo "Stack folder must look like projects/<project>/stacks/<NN-name>, in lower-case letters, digits and hyphens. Got: $stack_dir" >&2
+  exit 2
+fi
+project="${BASH_REMATCH[2]}"
+stack_name="${ORG_PREFIX}-${env_name}-${project}-${BASH_REMATCH[4]}"
+if [[ "$mode" == name ]]; then
+  echo "$stack_name"
+  exit 0
+fi
+
+: "${CFN_ROLE_ARN:?CFN_ROLE_ARN is not set}"
+region="${AWS_REGION:-${AWS_DEFAULT_REGION:-}}"
+: "${region:?AWS_REGION is not set}"
 template="${stack_dir}/template.yml"
 params="${stack_dir}/${env_name}.json"
 change_set="${mode}-${GITHUB_SHA:-local}-$(date +%s)"
@@ -32,6 +54,18 @@ if [[ ! -f "$template" || ! -f "$params" ]]; then
   exit 1
 fi
 
+# Upload any local code the template points at (such as a Lambda function's
+# CodeUri) to this account's artifacts bucket. A template without local code
+# comes out unchanged.
+account="$(aws sts get-caller-identity --query Account --output text)"
+packaged="$(mktemp)"
+trap 'rm -f "$packaged"' EXIT
+aws cloudformation package \
+  --template-file "$template" \
+  --s3-bucket "${ORG_PREFIX}-${env_name}-artifacts-${account}-${region}" \
+  --s3-prefix "$project" \
+  --output-template-file "$packaged" > /dev/null
+
 # A stack that does not exist yet, or only exists as an empty preview shell,
 # needs a CREATE change set. A stuck ROLLBACK_COMPLETE stack must be deleted first.
 status="$(aws cloudformation describe-stacks --stack-name "$stack_name" \
@@ -39,7 +73,7 @@ status="$(aws cloudformation describe-stacks --stack-name "$stack_name" \
 case "$status" in
   NONE|REVIEW_IN_PROGRESS) cs_type=CREATE ;;
   ROLLBACK_COMPLETE)
-    echo "Stack $stack_name is in ROLLBACK_COMPLETE and must be deleted first (see runbook 11.2)." >&2
+    echo "Stack $stack_name is in ROLLBACK_COMPLETE and must be deleted first (see the runbook for a failed deployment)." >&2
     exit 1 ;;
   *) cs_type=UPDATE ;;
 esac
@@ -48,10 +82,12 @@ aws cloudformation create-change-set \
   --stack-name "$stack_name" \
   --change-set-name "$change_set" \
   --change-set-type "$cs_type" \
-  --template-body "file://${template}" \
+  --template-body "file://${packaged}" \
   --parameters "file://${params}" \
   --role-arn "$CFN_ROLE_ARN" \
+  --capabilities CAPABILITY_NAMED_IAM \
   --tags "Key=Environment,Value=${env_name}" \
+         "Key=Project,Value=${project}" \
          "Key=ManagedBy,Value=cloudformation" \
          "Key=Repository,Value=${GITHUB_REPOSITORY:-local}" \
   --query Id --output text > /dev/null
