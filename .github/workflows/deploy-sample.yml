@@ -1,0 +1,38 @@
+name: Deploy sample
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/sample/**'
+      - '!projects/sample/**/*.md'
+      - '!projects/sample/docs/**'
+      - 'scripts/**'
+      - '.github/workflows/deploy-project.yml'
+      - '.github/workflows/deploy-sample.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dev:
+    name: Deploy sample to dev
+    uses: ./.github/workflows/deploy-project.yml
+    with:
+      project: sample
+      environment: dev
+    permissions:
+      id-token: write
+      contents: read
+
+  prod:
+    name: Deploy sample to prod
+    needs: dev
+    uses: ./.github/workflows/deploy-project.yml
+    with:
+      project: sample
+      environment: prod
+    permissions:
+      id-token: write
+      contents: read
