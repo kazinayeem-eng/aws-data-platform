@@ -20,7 +20,7 @@ pyproject.toml, uv.lock                  the pinned Python tools; run them with 
 
 ## Names
 
-A stack is named `<org>-<env>-<project>-<name>`, where `<name>` is the stack folder without its number: `projects/data/stacks/00-bucket` becomes `acme-dev-data-bucket`.
+A stack is named `<org>-<env>-<project>-<name>`, where `<name>` is the stack folder without its number: `projects/sample/stacks/00-bucket` becomes `acme-dev-sample-bucket`.
 
 Name every resource a project creates `<org>-<env>-<project>-...` too. The pipeline's service role can only create resources whose names start with `<org>-<env>-`, so that part is required, not just tidy. IAM roles must also carry the permissions boundary `<org>-workload-boundary-<env>`.
 
@@ -28,7 +28,7 @@ Name every resource a project creates `<org>-<env>-<project>-...` too. The pipel
 
 1. Pick a short name: 2 to 20 lower-case letters, digits or hyphens, starting with a letter.
 2. Create `projects/<project>/stacks/00-<name>/` with `template.yml`, `dev.json` and `prod.json`.
-3. Copy the workflow and swap the name: `sed 's/data/<project>/g' .github/workflows/deploy-data.yml > .github/workflows/deploy-<project>.yml`
+3. Copy the workflow and swap the name: `sed 's/sample/<project>/g' .github/workflows/deploy-sample.yml > .github/workflows/deploy-<project>.yml`
 4. Check it: `uv run cfn-lint projects/<project>/stacks/*/template.yml` and `cfn-guard validate --rules guard/ --data <template>`.
 5. Open a pull request. `Preview dev` and `Preview prod` show what will be created.
 6. Merge. The new workflow deploys dev, then waits for your approval before prod.
