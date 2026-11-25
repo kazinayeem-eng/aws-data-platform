@@ -1,9 +1,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
   Pipeline identity for one workload account: the GitHub OIDC provider, a
-  CloudFormation service role, and separate plan and deploy roles for GitHub
-  Actions. Deployed once per account by a human administrator, never by the
-  pipeline itself.
+  CloudFormation service role, separate plan and deploy roles for GitHub
+  Actions, a bucket for packaged code, and the permissions boundary that every
+  role a stack creates must carry. Deployed by a human administrator, never by
+  the pipeline itself.
 
 Parameters:
   OrgPrefix:
@@ -33,9 +34,88 @@ Resources:
         - 6938fd4d98bab03faadb97b34396831e3780aea1
         - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
 
+  # Packaged code, such as Lambda zips, uploaded by scripts/cfn-change.sh.
+  ArtifactsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub '${OrgPrefix}-${Environment}-artifacts-${AWS::AccountId}-${AWS::Region}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          # shortcut: packages expire after 90 days, so rolling a stack back to
+          # code older than that fails; raise the number if you ever need to.
+          - Id: expire-old-packages
+            Status: Enabled
+            ExpirationInDays: 90
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 7
+          - Id: abort-incomplete-uploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+
+  ArtifactsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ArtifactsBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt ArtifactsBucket.Arn
+              - !Sub '${ArtifactsBucket.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
+
+  # The most any role created by a stack can ever do: everything except changing
+  # identities, the organization or the account. CloudFormation may only create
+  # roles that carry this boundary.
+  WorkloadBoundary:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${OrgPrefix}-workload-boundary-${Environment}'
+      Description: Permissions boundary for every role that a pipeline-deployed stack creates.
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowWorkloadActions
+            Effect: Allow
+            Action: '*'
+            Resource: '*'
+          - Sid: DenyIdentityAndAccountChanges
+            Effect: Deny
+            Action:
+              - 'iam:*'
+              - 'organizations:*'
+              - 'account:*'
+              - 'sso:*'
+              - 'sso-directory:*'
+              - 'identitystore:*'
+            Resource: '*'
+
   # Assumed by the CloudFormation service only. This role, not the GitHub roles,
-  # holds the permission to create resources. Widen it deliberately as you adopt
-  # new AWS services.
+  # holds the permission to create resources. Widen it deliberately, one service
+  # at a time, as projects need them.
   CloudFormationServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -58,8 +138,38 @@ Resources:
                 Effect: Allow
                 Action: 's3:*'
                 Resource: !Sub 'arn:aws:s3:::${OrgPrefix}-${Environment}-*'
+              - Sid: CreateRolesOnlyWithTheBoundary
+                Effect: Allow
+                Action:
+                  - 'iam:CreateRole'
+                  - 'iam:PutRolePolicy'
+                  - 'iam:DeleteRolePolicy'
+                  - 'iam:AttachRolePolicy'
+                  - 'iam:DetachRolePolicy'
+                  - 'iam:PutRolePermissionsBoundary'
+                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${OrgPrefix}-${Environment}-*'
+                Condition:
+                  StringEquals:
+                    'iam:PermissionsBoundary': !Ref WorkloadBoundary
+              - Sid: ManageRolesForThisEnvironment
+                Effect: Allow
+                Action:
+                  - 'iam:GetRole'
+                  - 'iam:GetRolePolicy'
+                  - 'iam:ListRolePolicies'
+                  - 'iam:ListAttachedRolePolicies'
+                  - 'iam:TagRole'
+                  - 'iam:UntagRole'
+                  - 'iam:UpdateRole'
+                  - 'iam:UpdateRoleDescription'
+                  - 'iam:UpdateAssumeRolePolicy'
+                  - 'iam:DeleteRole'
+                  - 'iam:PassRole'
+                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${OrgPrefix}-${Environment}-*'
 
   # Used by pull requests. Can preview change sets, cannot execute them.
+  # TagResource and UntagResource: CloudFormation checks them when a change set
+  # carries stack tags, which scripts/cfn-change.sh always adds.
   GitHubPlanRole:
     Type: AWS::IAM::Role
     Properties:
@@ -89,6 +199,8 @@ Resources:
                   - 'cloudformation:DeleteChangeSet'
                   - 'cloudformation:DescribeChangeSet'
                   - 'cloudformation:DescribeStacks'
+                  - 'cloudformation:TagResource'
+                  - 'cloudformation:UntagResource'
                 Resource:
                   - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${OrgPrefix}-${Environment}-*/*'
                   - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:changeSet/*/*'
@@ -99,6 +211,16 @@ Resources:
                 Condition:
                   StringEquals:
                     'iam:PassedToService': cloudformation.amazonaws.com
+              - Sid: UploadPackagedCode
+                Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                Resource: !Sub '${ArtifactsBucket.Arn}/*'
+              - Sid: CheckPackagedCode
+                Effect: Allow
+                Action: 's3:ListBucket'
+                Resource: !GetAtt ArtifactsBucket.Arn
 
   # Used after merge. Only a job that targets this GitHub Environment can assume it.
   GitHubDeployRole:
@@ -132,6 +254,8 @@ Resources:
                   - 'cloudformation:DescribeStackEvents'
                   - 'cloudformation:DescribeStacks'
                   - 'cloudformation:ExecuteChangeSet'
+                  - 'cloudformation:TagResource'
+                  - 'cloudformation:UntagResource'
                   - 'cloudformation:UpdateTerminationProtection'
                 Resource:
                   - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${OrgPrefix}-${Environment}-*/*'
@@ -143,6 +267,16 @@ Resources:
                 Condition:
                   StringEquals:
                     'iam:PassedToService': cloudformation.amazonaws.com
+              - Sid: UploadPackagedCode
+                Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                Resource: !Sub '${ArtifactsBucket.Arn}/*'
+              - Sid: CheckPackagedCode
+                Effect: Allow
+                Action: 's3:ListBucket'
+                Resource: !GetAtt ArtifactsBucket.Arn
 
 Outputs:
   CloudFormationServiceRoleArn:
@@ -154,3 +288,9 @@ Outputs:
   GitHubPlanRoleArn:
     Description: Assumed by pull-request previews. Built by name in the workflow, listed here for reference.
     Value: !GetAtt GitHubPlanRole.Arn
+  ArtifactsBucketName:
+    Description: Where scripts/cfn-change.sh uploads packaged code. Found by name, listed here for reference.
+    Value: !Ref ArtifactsBucket
+  WorkloadBoundaryArn:
+    Description: The permissions boundary every role created by a stack must carry.
+    Value: !Ref WorkloadBoundary
