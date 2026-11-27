@@ -1,7 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
-  Hardened S3 data bucket: S3-managed encryption, versioning, server access
-  logging, TLS-only access and lifecycle rules.
+  Hardened S3 data bucket: S3-managed encryption, server access logging,
+  TLS-only access and lifecycle rules. Deleting the stack deletes both buckets
+  once they are empty (decision D13).
 
 Parameters:
   OrgPrefix:
@@ -17,11 +18,6 @@ Parameters:
     AllowedValues: [internal, confidential, restricted]
     Default: confidential
     Description: Sensitivity label recorded as a tag on the bucket.
-  NoncurrentVersionRetentionDays:
-    Type: Number
-    Default: 90
-    MinValue: 1
-    Description: Days to keep overwritten or deleted object versions.
   AccessLogRetentionDays:
     Type: Number
     Default: 365
@@ -31,7 +27,7 @@ Parameters:
 Resources:
   AccessLogBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
+    DeletionPolicy: Delete
     UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Sub '${OrgPrefix}-${Environment}-sample-logs-${AWS::AccountId}-${AWS::Region}'
@@ -47,15 +43,15 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      # These buckets were created with versioning, which S3 can only suspend,
+      # never remove: no new versions are kept (decision D13).
       VersioningConfiguration:
-        Status: Enabled
+        Status: Suspended
       LifecycleConfiguration:
         Rules:
           - Id: expire-access-logs
             Status: Enabled
             ExpirationInDays: !Ref AccessLogRetentionDays
-            NoncurrentVersionExpiration:
-              NoncurrentDays: 30
           - Id: abort-incomplete-uploads
             Status: Enabled
             AbortIncompleteMultipartUpload:
@@ -92,7 +88,7 @@ Resources:
 
   DataBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
+    DeletionPolicy: Delete
     UpdateReplacePolicy: Retain
     DependsOn: AccessLogBucketPolicy
     Properties:
@@ -109,17 +105,15 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      # These buckets were created with versioning, which S3 can only suspend,
+      # never remove: no new versions are kept (decision D13).
       VersioningConfiguration:
-        Status: Enabled
+        Status: Suspended
       LoggingConfiguration:
         DestinationBucketName: !Ref AccessLogBucket
         LogFilePrefix: s3-access/sample/
       LifecycleConfiguration:
         Rules:
-          - Id: expire-old-versions
-            Status: Enabled
-            NoncurrentVersionExpiration:
-              NoncurrentDays: !Ref NoncurrentVersionRetentionDays
           - Id: abort-incomplete-uploads
             Status: Enabled
             AbortIncompleteMultipartUpload:

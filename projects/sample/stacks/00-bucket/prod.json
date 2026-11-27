@@ -2,6 +2,5 @@
   { "ParameterKey": "OrgPrefix", "ParameterValue": "kazi" },
   { "ParameterKey": "Environment", "ParameterValue": "prod" },
   { "ParameterKey": "DataClassification", "ParameterValue": "confidential" },
-  { "ParameterKey": "NoncurrentVersionRetentionDays", "ParameterValue": "90" },
   { "ParameterKey": "AccessLogRetentionDays", "ParameterValue": "365" }
 ]
