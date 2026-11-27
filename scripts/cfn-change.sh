@@ -141,6 +141,6 @@ if ! aws cloudformation wait "$waiter" --stack-name "$stack_name"; then
   exit 1
 fi
 
-aws cloudformation update-termination-protection --stack-name "$stack_name" \
-  --enable-termination-protection > /dev/null
+# No termination protection: deleting a stack, from the console or the CLI,
+# removes everything in it (decision D13).
 echo "Deployed ${stack_name}"

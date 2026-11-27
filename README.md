@@ -37,7 +37,7 @@ If the project needs a resource type the service role cannot create yet, widen `
 
 ## Remove a project
 
-1. Delete its stacks by hand with an admin profile: turn termination protection off, then delete the stack, then delete any retained buckets.
+1. Empty its buckets, then delete its stacks, in the console or with an admin profile. Deleting a stack removes everything in it, buckets included; a stack whose bucket is not empty stops at `DELETE_FAILED`, so empty the bucket and delete again.
 2. In a pull request, delete `projects/<project>/` and `.github/workflows/deploy-<project>.yml`.
 
 Deleting a stack folder never deletes the stack in AWS. That is always a deliberate, manual step.

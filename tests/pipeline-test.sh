@@ -88,7 +88,6 @@ case "$1 $2" in
   "cloudformation describe-change-set")
     echo '{"Changes":[{"ResourceChange":{"Action":"Add","LogicalResourceId":"Bucket","ResourceType":"AWS::S3::Bucket"}}]}' ;;
   "cloudformation wait"|"cloudformation delete-change-set"|"cloudformation execute-change-set") ;;
-  "cloudformation update-termination-protection") ;;
   *) echo "unexpected aws call: $*" >&2; exit 1 ;;
 esac
 EOF
@@ -115,8 +114,8 @@ check "preview deletes its change set and never executes it" "1 0" \
   "$(grep -c 'delete-change-set' "$log") $(grep -c 'execute-change-set' "$log")"
 : > "$log"
 out="$(run apply data dev)"
-check "apply executes the change set and protects the stack" "1 1" \
-  "$(grep -c 'execute-change-set' "$log") $(grep -c 'enable-termination-protection' "$log")"
+check "apply executes the change set and leaves the stack deletable" "1 0" \
+  "$(grep -c 'execute-change-set' "$log") $(grep -c 'termination-protection' "$log")"
 check "apply reports the deployed stack" "Deployed acme-dev-data-bucket" "$(grep '^Deployed' <<< "$out")"
 
 echo
