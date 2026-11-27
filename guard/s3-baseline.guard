@@ -14,11 +14,8 @@ rule s3_buckets_block_public_access when %buckets !empty {
     %buckets.Properties.PublicAccessBlockConfiguration.RestrictPublicBuckets == true
 }
 
-rule s3_buckets_are_versioned when %buckets !empty {
-    %buckets.Properties.VersioningConfiguration.Status == 'Enabled'
-}
-
-rule s3_buckets_are_retained when %buckets !empty {
-    %buckets.DeletionPolicy == 'Retain'
+# Deleting a stack may delete its buckets (decision D13), but a change that
+# replaces a bucket, such as a rename, must never delete the old one with it.
+rule s3_buckets_survive_replacement when %buckets !empty {
     %buckets.UpdateReplacePolicy == 'Retain'
 }

@@ -19,3 +19,4 @@ Each row is a gap left open on purpose. Review the list every quarter.
 | The public repository shows your account layout | Account IDs and role names are identifiers, not secrets | You hold real data: move to a private repository on a paid plan |
 | The budget brake reacts hours after spend, and does not stop charges that are already running | AWS has no hard spending cap, and billing data is delayed | Never fully: keep the alerts on and delete costly resources quickly |
 | Packaged code older than 90 days is deleted, so rolling back to it fails | Keeps the artifacts bucket nearly free | You need longer rollbacks: raise the lifecycle days |
+| Deleting a stack destroys its data, in dev and prod, and buckets keep no old versions | Teardown takes one delete, and the data is synthetic | Real data arrives: put `DeletionPolicy: Retain` and versioning back on its buckets |

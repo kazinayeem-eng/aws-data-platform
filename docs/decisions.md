@@ -87,3 +87,13 @@ Each entry records one choice, why it was made, and when to look at it again.
 **Why.** GitHub Free offers branch rulesets and required reviewers only on public repositories.
 
 **Revisit when.** Before you add any collaborator.
+
+## D13. Deleting a stack removes everything in it
+
+**Decision.** Stacks have no termination protection, and buckets use `DeletionPolicy: Delete` and need no versioning. Deleting a stack, in the console or with the CLI, removes all of its resources once its buckets are empty. Buckets still use `UpdateReplacePolicy: Retain`, and the Guard rules check that.
+
+**Why.** Teardown should be one deliberate delete, not a hunt for resources that were kept behind. You empty a bucket yourself first; a delete that meets a full bucket stops at `DELETE_FAILED`, and you retry it.
+
+**Trade-off.** A deleted stack, or a bucket removed from a merged template, cannot be recovered, and there are no old object versions to restore. A change that replaces a bucket still keeps the old one.
+
+**Revisit when.** A project holds data you cannot recreate.

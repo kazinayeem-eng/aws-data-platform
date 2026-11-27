@@ -32,17 +32,16 @@ aws cloudformation describe-stack-events --stack-name <org>-<env>-<project>-<nam
 | `DELETE_FAILED` | A resource could not be deleted, often a bucket that is not empty | Empty or keep the resource, then retry |
 | `REVIEW_IN_PROGRESS` | An empty shell left by a preview of a new stack | Harmless. The next deploy uses it |
 
-Buckets use `DeletionPolicy: Retain`, so a failed first deployment can leave a bucket behind, and the retry then fails with `already exists`. Delete the leftover bucket only if it is empty, with an admin profile, and note why.
+A bucket that holds objects cannot be deleted, so a stack delete, or the rollback of a failed first deployment, can stop at `DELETE_FAILED`. Empty the bucket (S3 console → the bucket → **Empty**), then delete again.
 
 ## The budget brake fired
 
 You get an email saying the budget action ran. Dev and prod are now frozen: previews, deploys and your workloads' own AWS calls fail with `explicit deny in a service control policy`. You can still sign in through Identity Center and clean up.
 
 1. Find what costs money. In the management account, open **Billing and Cost Management → Cost Explorer**, group by **Service**, and look at the last 7 days.
-2. Stop it. Delete or scale down the resource. To delete a whole stack, use an admin profile: CloudFormation does the work with the service role, which the brake leaves alone.
+2. Stop it. Delete or scale down the resource. To delete a whole stack, use the console or an admin profile: CloudFormation does the work with the service role, which the brake leaves alone. Empty its buckets first.
 
     ```sh
-    aws cloudformation update-termination-protection --no-enable-termination-protection --stack-name <stack> --profile <org>-<env>-admin
     aws cloudformation delete-stack --stack-name <stack> --profile <org>-<env>-admin
     ```
 
@@ -89,12 +88,12 @@ Escalate only as far as you must, and clean up afterwards.
 
 ## Rolling back
 
-Prefer rolling forward: run `git revert <commit>` on a new branch, open a pull request, read the preview, merge and approve. A revert that replaces a data store does not bring the data back, so lean on versioning and retained resources.
+Prefer rolling forward: run `git revert <commit>` on a new branch, open a pull request, read the preview, merge and approve. A revert does not bring deleted data back. A change that replaces a bucket keeps the old one (`UpdateReplacePolicy: Retain`); a deleted stack or bucket is gone for good.
 
 ## Removing a project
 
-1. Delete its stacks in dev and prod with the two commands from "The budget brake fired", step 2.
-2. Delete any buckets the stacks kept (they use `DeletionPolicy: Retain`): `aws s3api delete-bucket --bucket <bucket> --profile <org>-<env>-admin`. A bucket must be empty, including old versions.
+1. Empty each of its buckets: S3 console → the bucket → **Empty** (this removes old versions too).
+2. Delete its stacks in dev and prod, in the console or with the command from "The budget brake fired", step 2. If one stops at `DELETE_FAILED`, a bucket was not empty yet: empty it and delete again.
 3. In a pull request, delete `projects/<project>/` and `.github/workflows/deploy-<project>.yml`.
 
 ## Adding and removing people
