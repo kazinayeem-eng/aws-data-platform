@@ -1,0 +1,38 @@
+name: Deploy probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/probe/**'
+      - '!projects/probe/**/*.md'
+      - '!projects/probe/docs/**'
+      - 'scripts/**'
+      - '.github/workflows/deploy-project.yml'
+      - '.github/workflows/deploy-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dev:
+    name: Deploy probe to dev
+    uses: ./.github/workflows/deploy-project.yml
+    with:
+      project: probe
+      environment: dev
+    permissions:
+      id-token: write
+      contents: read
+
+  prod:
+    name: Deploy probe to prod
+    needs: dev
+    uses: ./.github/workflows/deploy-project.yml
+    with:
+      project: probe
+      environment: prod
+    permissions:
+      id-token: write
+      contents: read
