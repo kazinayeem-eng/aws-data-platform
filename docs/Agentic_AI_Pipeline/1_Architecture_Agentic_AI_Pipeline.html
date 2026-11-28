@@ -1,0 +1,1341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:,">
+<title>Agentic Pipeline Assurance — Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --bg:#F2F3F0; --surface:#FFFFFF; --surface2:#EEF1F4; --ink:#182230; --muted:#5C6B7E; --line:#D8DEE6;
+  --agent:#2457C5; --agent-soft:#E3EBFF; --agent-line:#9AB6F5;
+  --ok:#177A3A; --ok-soft:#DFF2E4; --bad:#C62F1F; --bad-soft:#FDE9E6; --warn:#8A5A00; --warn-soft:#FEF0C0;
+  --sys:#EAF0F6; --radius:14px;
+  --font:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0D141C; --surface:#151F2B; --surface2:#1B293A; --ink:#EAF0F7; --muted:#9DACC0; --line:#2A3A4E;
+    --agent:#82B0FF; --agent-soft:#1C335E; --agent-line:#3A5FA3;
+    --ok:#6ED598; --ok-soft:#163826; --bad:#FF9A8A; --bad-soft:#4A221C; --warn:#F0BE5A; --warn-soft:#3A2E0E;
+    --sys:#1E2E42;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.55;padding:22px 16px 56px}
+a{color:var(--agent)}
+.wrap{max-width:1120px;margin:0 auto}
+button{min-height:44px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:clamp(28px,5vw,44px);line-height:.98;letter-spacing:-.02em;margin:8px 0 12px;font-weight:700;max-width:18ch}
+h1 em{font-style:normal;color:var(--agent)}
+.lede{font-size:17px;line-height:1.6;color:var(--muted);max-width:68ch;margin:0}
+.lede strong{color:var(--ink)}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid var(--line);background:var(--surface);border-radius:999px;font-family:var(--mono);font-size:12px;font-weight:500}
+.chip b{color:var(--agent)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.docnav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+.docnav a{font-family:var(--mono);font-size:12px;font-weight:500;padding:7px 11px;border:1px solid var(--line);border-radius:999px;color:var(--muted);text-decoration:none;background:var(--surface)}
+.docnav a:hover{color:var(--ink);border-color:var(--agent-line)}
+.docnav a[aria-current]{color:var(--surface);background:var(--ink);border-color:var(--ink)}
+
+/* Stage */
+.stage{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+.stage-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+.stage-head-left{display:flex;align-items:center;gap:10px;min-width:0}
+.live{width:9px;height:9px;border-radius:50%;background:var(--bad);box-shadow:0 0 0 5px var(--bad-soft);flex:none}
+.stage-title{font-weight:700;font-size:15px}
+.stage-sub{font-size:13px;color:var(--muted)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:0 16px;border-radius:999px;font-weight:600;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.btn.primary .playico{border-left-color:var(--surface)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:focus-visible,.pdot:focus-visible,.agent-card:focus-visible,.steps-list li:focus-visible{outline:3px solid var(--agent);outline-offset:2px}
+.playico{width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:9px solid var(--ink)}
+.pauseico{width:10px;height:11px;border-left:3px solid currentColor;border-right:3px solid currentColor}
+.speed{font-family:var(--mono);font-size:12px;padding:0 10px}
+
+/* Now happening */
+.now{display:grid;grid-template-columns:86px 1fr auto;gap:14px;align-items:center;padding:14px 16px;background:var(--surface2);border-bottom:1px solid var(--line)}
+.now-time{font-family:var(--mono);font-weight:700;font-size:20px;line-height:1;color:var(--ink)}
+.now-time small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px;font-weight:600}
+.now-title{font-weight:700;font-size:16px;line-height:1.25}
+.now-desc{font-size:14px;color:var(--muted);margin-top:2px;line-height:1.5}
+.progress{display:flex;flex-wrap:wrap;gap:5px;align-items:center;max-width:420px}
+.pdot{width:26px;height:6px;border-radius:999px;background:var(--line);border:0;padding:0;cursor:pointer;min-height:28px;position:relative}
+.pdot::after{content:"";position:absolute;inset:10px 0}
+.pdot.done{background:var(--agent)}
+.pdot.cur{background:var(--ink);box-shadow:0 0 0 3px var(--agent-soft)}
+.diagram-wrap{padding:10px 8px 4px;background-image:radial-gradient(var(--line) 1px, transparent 1.1px);background-size:22px 22px;background-color:var(--surface);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.scroll-hint{display:none;margin:0;padding:8px 14px 0;font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--surface)}
+svg.diagram{display:block;width:100%;min-width:900px;height:auto}
+svg.diagram text{font-family:var(--font)}
+.node{cursor:pointer}
+.node:focus-visible{outline:none}
+.node:focus-visible rect.main{stroke:var(--agent);stroke-width:3}
+.node rect.main{fill:var(--surface);stroke:var(--line);stroke-width:1.4;transition:all .25s}
+.node text.title{font-size:14px;font-weight:700;fill:var(--ink)}
+.node text.sub{font-size:11.5px;fill:var(--muted)}
+.node text.tag{font-size:10px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;fill:var(--muted);font-weight:600}
+.node.agent rect.main{fill:var(--agent-soft);stroke:var(--agent-line)}
+.node.sys rect.main{fill:var(--sys);stroke:var(--line)}
+.node.ok rect.main{fill:var(--ok-soft);stroke:var(--ok)}
+.node.bad rect.main{fill:var(--bad-soft);stroke:var(--bad)}
+.node.is-active rect.main{stroke:var(--agent);stroke-width:2.6;filter:drop-shadow(0 6px 14px rgba(36,87,197,.28))}
+.node.is-dim{opacity:.5}
+.flow{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:5 5;opacity:.65}
+.flow.active{stroke:var(--agent);stroke-width:2.4;opacity:1;stroke-dasharray:6 4;animation:dash 1s linear infinite}
+.flow.badflow{stroke:var(--bad)}
+.flow.okflow{stroke:var(--ok)}
+@keyframes dash{to{stroke-dashoffset:-10}}
+.band{fill:transparent;stroke:var(--line);stroke-width:1;stroke-dasharray:4 6}
+.band-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;fill:var(--muted);font-weight:700}
+.trustbox{fill:transparent;stroke:var(--ok);stroke-width:1.4;stroke-dasharray:5 4}
+.trust-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;fill:var(--ok);font-weight:700}
+.flabel{font-family:var(--mono);font-size:10px;font-weight:600;fill:var(--muted)}
+.bus{fill:var(--agent-soft);stroke:var(--agent-line);stroke-width:1.2}
+.bus-label{font-family:var(--mono);font-size:10.5px;font-weight:600;fill:var(--agent);paint-order:stroke;stroke:var(--agent-soft);stroke-width:5px;stroke-linejoin:round}
+.tick{stroke:var(--agent-line);stroke-width:2}
+.note{font-size:11.5px;fill:var(--muted)}
+.note-bad{font-size:12px;font-weight:700;fill:var(--bad)}
+#packet{filter:drop-shadow(0 2px 6px rgba(36,87,197,.5))}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;padding:12px 16px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);background:var(--surface)}
+.legend span{display:inline-flex;gap:7px;align-items:center}
+.sw{width:18px;height:12px;border-radius:4px;border:1.5px solid var(--line);background:var(--surface);display:inline-block}
+.sw.a{background:var(--agent-soft);border-color:var(--agent-line)} .sw.s{background:var(--sys)} .sw.g{background:var(--ok-soft);border-color:var(--ok)} .sw.r{background:var(--bad-soft);border-color:var(--bad)} .sw.t{background:transparent;border:1.5px dashed var(--ok)}
+
+/* Detail + layout below */
+.grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;margin-top:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+.card h2{font-size:18px;line-height:1.2;margin:6px 0 8px}
+.card h3{font-size:15px;margin:0 0 6px}
+.card p{color:var(--muted);font-size:14.5px;margin:0}
+.card p+p{margin-top:8px}
+.card p.kicker{font-size:11px}
+.detail{min-height:210px}
+.detail .role{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--agent);font-weight:700}
+.detail h3{font-size:20px;margin:6px 0 6px}
+.detail ul{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:14px;line-height:1.6}
+.detail code,.card code{font-family:var(--mono);font-size:12.5px;background:var(--surface2);padding:1px 6px;border-radius:6px;color:var(--ink)}
+.steps-list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:0}
+.steps-list li{display:grid;grid-template-columns:52px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+.steps-list li:first-child{border-top:0}
+.steps-list li.cur .stitle{color:var(--agent)}
+.steps-list .stime{font-family:var(--mono);font-size:12px;font-weight:700;padding-top:2px}
+.steps-list .stitle{font-weight:700;font-size:14px}
+.steps-list .sdesc{font-size:13px;color:var(--muted)}
+
+/* Agents */
+.section{margin-top:28px}
+.section-head{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.section-head h2{font-size:24px;letter-spacing:-.02em;margin:6px 0 0;line-height:1.1}
+.agents{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
+.agent-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;text-align:left;width:100%;color:var(--ink);font-family:var(--font)}
+.agent-card:hover{border-color:var(--agent-line)}
+.agent-card.active{border-color:var(--agent);box-shadow:0 0 0 3px var(--agent-soft)}
+.agent-num{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--agent)}
+.agent-card h3{margin:6px 0 4px;font-size:16px}
+.agent-card p{font-size:13px;color:var(--muted);margin:0;line-height:1.5}
+.agent-card .tools{margin-top:10px;font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--ink);background:var(--surface2);padding:7px 8px;border-radius:8px;word-break:break-word}
+
+/* Stores / safety */
+.three{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px}
+.store{padding:16px}
+.store code{font-family:var(--mono);font-size:12px;background:var(--surface2);padding:2px 6px;border-radius:6px}
+.safety{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
+.safety .card{padding:16px}
+.safety .big{font-size:22px}
+.deploy{margin-top:16px;background:#182230;color:#EAF0F7;border:1px solid var(--line);border-radius:16px;padding:18px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+.deploy p{color:#CBD6E6;margin:6px 0 0;font-size:14px;max-width:62ch}
+.deploy code{font-family:var(--mono);font-size:12px;background:rgba(255,255,255,.12);padding:2px 6px;border-radius:6px;color:#fff}
+.deploy .cost{text-align:right}
+.deploy .cost strong{display:block;font-size:28px;line-height:1}
+.deploy .cost span{font-size:12px;opacity:.8;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.flowline{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;font-family:var(--mono);font-size:12px}
+.flowline .box{padding:7px 10px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(255,255,255,.08);color:#fff}
+.flowline .arr{color:#9DACC0}
+.foot{margin-top:18px;font-size:13px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media(max-width:900px){
+  .agents{grid-template-columns:repeat(2,1fr)}
+  .safety{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+  .deploy{grid-template-columns:1fr} .deploy .cost{text-align:left}
+  .now{grid-template-columns:64px 1fr} .progress{grid-column:1/-1}
+  .scroll-hint{display:block}
+}
+@media(max-width:520px){
+  .agents{grid-template-columns:1fr}
+  body{padding:14px 10px 40px}
+  .now-time{font-size:17px}
+  .stage-head{padding:12px}
+}
+@media (prefers-reduced-motion: reduce){
+  .flow.active{animation:none}
+  html{scroll-behavior:auto}
+}
+
+
+/* ---- Incident replay: panel, chapters, step focus ---- */
+.stage{overflow:clip}
+.panel{background:var(--surface);border-bottom:1px solid var(--line)}
+.stage-head{border-bottom:0;padding-bottom:6px}
+.seg{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.seg span.sw-wrap{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{appearance:none;border:0;background:var(--surface);color:var(--muted);font:600 12px var(--font);padding:0 12px;min-height:34px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.chapters{display:flex;gap:6px;padding:4px 16px 10px;overflow-x:auto;scrollbar-width:none}
+.chapters::-webkit-scrollbar{display:none}
+.chap{flex:1 0 auto;min-width:96px;min-height:44px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 9px 7px;text-align:left;cursor:pointer;font-family:var(--font);color:var(--muted)}
+.chap .cname{display:block;font-size:12.5px;font-weight:600;white-space:nowrap}
+.chap .dots{display:flex;gap:4px;margin-top:6px}
+.chap .dots i{height:4px;flex:1;min-width:12px;border-radius:4px;background:var(--line)}
+.chap .dots i.done{background:var(--agent-line)}
+.chap .dots i.cur{background:var(--agent)}
+.chap.on{border-color:var(--agent);color:var(--ink);box-shadow:0 0 0 3px var(--agent-soft)}
+.chap:focus-visible{outline:3px solid var(--agent);outline-offset:2px}
+.now{grid-template-columns:86px 1fr;border-top:1px solid var(--line)}
+.now-desc{font-size:15px;color:var(--ink);margin-top:4px}
+.more{appearance:none;border:0;background:none;color:var(--agent);font:600 13px var(--font);padding:2px 0;margin-top:4px;cursor:pointer;min-height:30px}
+.now-full{margin:6px 0 0;font-size:14px;color:var(--muted);line-height:1.55;max-width:75ch}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px 10px}
+.ctrl .btn{min-height:40px}
+.ctrl .spacer{flex:1}
+.speedcycle{display:none}
+.countdown{height:3px;background:var(--surface2)}
+.countdown i{display:block;height:100%;width:0;background:var(--agent)}
+.hint{margin:0;padding:0 16px 10px;font-size:12.5px;color:var(--muted)}
+
+/* Diagram states while stepping: fade what is not in the step */
+.flow{transition:opacity .35s}
+.node{transition:opacity .35s}
+svg.stepping .flow{opacity:.07}
+svg.stepping .flabel,svg.stepping .note,svg.stepping .note-bad{opacity:.3;transition:opacity .35s}
+svg.stepping.failed .note-bad{opacity:1}
+svg.stepping .node{opacity:.2}
+svg.stepping .node.in-step{opacity:.55}
+svg.stepping .node.reached{opacity:1}
+svg .node.reached rect.main{stroke:var(--agent);stroke-width:2.4}
+svg .node.ok.reached rect.main{stroke:var(--ok)}
+svg .node.bad.reached rect.main{stroke:var(--bad)}
+svg .node.inspect rect.main{stroke:var(--ink);stroke-width:3}
+.node.arrive rect.main{animation:arrive .7s ease-out}
+@keyframes arrive{0%{filter:none}35%{filter:drop-shadow(0 0 9px rgba(36,87,197,.6))}100%{filter:none}}
+svg .flow.hop-now,svg .flow.hop-done{opacity:1;stroke-dasharray:none;stroke-width:2.6;stroke:var(--agent)}
+svg .flow.hop-done{opacity:.9}
+svg .flow.badflow.hop-now,svg .flow.badflow.hop-done{stroke:var(--bad)}
+svg .flow.okflow.hop-now,svg .flow.okflow.hop-done{stroke:var(--ok)}
+.token{transition:opacity .25s;pointer-events:none}
+.token rect{fill:var(--agent);stroke:var(--surface);stroke-width:1.5}
+.token text{fill:var(--surface);font:600 11.5px var(--mono)}
+.token.bad rect{fill:var(--bad)}
+.token.ok rect{fill:var(--ok)}
+.badge{pointer-events:none}
+.badge circle{fill:var(--surface);stroke:var(--agent);stroke-width:1.6}
+.badge text{fill:var(--agent);font:700 10.5px var(--mono)}
+.badge.bad circle{stroke:var(--bad)}.badge.bad text{fill:var(--bad)}
+.badge.ok circle{stroke:var(--ok)}.badge.ok text{fill:var(--ok)}
+.steps-list .sdesc{color:var(--muted)}
+
+/* Phones: a window onto the diagram that follows the moving tag */
+@media(max-width:760px){
+  .stage-head{display:none}
+  .chapters{padding:10px 12px 8px}
+  .chap{min-width:84px;padding:5px 8px 6px}
+  .now{grid-template-columns:1fr;gap:2px;padding:10px 14px}
+  .now-time{display:flex;gap:10px;align-items:baseline;font-size:13px}
+  .now-time small{margin-top:0}
+  .now-title{font-size:15px}
+  .now-desc{font-size:14px}
+  .ctrl{padding:8px 12px;gap:6px;flex-wrap:nowrap}
+  .ctrl .btn.icon{padding:0;width:42px;justify-content:center;font-size:16px}
+  .ctrl .lbl{display:none}
+  .speedcycle{display:inline-flex;padding:0 12px;font-size:13px}
+  .scroll-hint{display:none!important}
+  svg.diagram{min-width:860px}
+  .diagram-wrap{height:clamp(340px,calc(100svh - 270px),560px);overflow:auto}
+}
+@media (prefers-reduced-motion: reduce){
+  .node.arrive rect.main{animation:none}
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <nav class="docnav" aria-label="Project documents">
+      <a href="0_Repo_Setup.html">0 · Repo setup</a>
+      <a href="1_Architecture_Agentic_AI_Pipeline.html" aria-current="page">1 · Architecture</a>
+      <a href="2_Plan_Agentic_AI_Pipeline.html">2 · Build plan</a>
+      <a href="3_Guide_Agentic_AI_Pipeline.html">3 · Learning guide</a>
+    </nav>
+    <p class="kicker">Agentic Pipeline Assurance • Architecture in motion • ap-southeast-2</p>
+    <h1>One failed load. <em>Five agents.</em> Fixed before 08:00.</h1>
+    <p class="lede">A nightly load fails at <strong>02:14</strong> from a renamed column. The diagram replays how it gets fixed: <strong>detect → diagnose → test in a sandbox → check → human approval → gated swap → verify (or roll back)</strong>. It is the system the <a href="2_Plan_Agentic_AI_Pipeline.html">Build Plan</a> specifies and the <a href="3_Guide_Agentic_AI_Pipeline.html">Learning Guide</a> builds, one phase at a time.</p>
+    <div class="meta" aria-label="Key facts">
+      <span class="chip"><span class="dot"></span> Version <b>v1.4</b></span>
+      <span class="chip">Stacks <b>kazi-&lt;env&gt;-apa-*</b></span>
+      <span class="chip">Model <b>Bedrock Nova Micro</b></span>
+      <span class="chip">Framework <b>Strands Agents SDK</b></span>
+      <span class="chip">Budget <b>under the $5 / month brake</b></span>
+      <span class="chip">Repo <b>projects/apa/</b></span>
+    </div>
+  </header>
+
+  <!-- STAGE -->
+  <section class="stage" aria-label="Animated architecture diagram">
+    <div class="panel">
+      <div class="stage-head">
+        <div class="stage-head-left">
+          <span class="live" aria-hidden="true"></span>
+          <div>
+            <div class="stage-title">Architecture — incident replay</div>
+            <div class="stage-sub">Step through it at your own pace, or play it all. Tap any box for what it does.</div>
+          </div>
+        </div>
+        <div class="seg" role="group" aria-label="Replay speed">Speed <span class="sw-wrap"><button type="button" data-speed="slow" aria-pressed="false">Slow</button><button type="button" data-speed="normal" aria-pressed="true">Normal</button><button type="button" data-speed="fast" aria-pressed="false">Fast</button></span></div>
+      </div>
+      <div class="chapters" id="chapters" aria-label="Chapters"></div>
+      <div class="now" id="nowBox" aria-live="polite">
+        <div class="now-time"><span id="nowTime">02:14</span><small id="nowStep">Overview</small></div>
+        <div>
+          <div class="now-title" id="nowTitle"></div>
+          <div class="now-desc" id="nowShort"></div>
+          <button class="more" id="moreBtn" type="button" aria-expanded="false" aria-controls="nowFull" hidden>Full explanation</button>
+          <p class="now-full" id="nowFull" hidden></p>
+        </div>
+      </div>
+      <div class="ctrl">
+        <button class="btn icon" id="prevBtn" type="button" aria-label="Previous step">←<span class="lbl"> Prev</span></button>
+        <button class="btn primary" id="nextBtn" type="button">Start →</button>
+        <span class="spacer"></span>
+        <button class="btn icon" id="replayBtn" type="button" aria-label="Replay this step">↻<span class="lbl"> Replay step</span></button>
+        <button class="btn icon" id="playBtn" type="button" aria-label="Play all">▶<span class="lbl"> Play all</span></button>
+        <button class="btn speedcycle" id="speedBtn" type="button" aria-label="Speed: Normal. Tap to change">Normal</button>
+      </div>
+      <div class="countdown" aria-hidden="true"><i id="cdBar"></i></div>
+    </div>
+    <p class="scroll-hint">↔ Swipe the diagram sideways — it follows the action.</p>
+    <div class="diagram-wrap" id="diagramWrap">
+      <svg class="diagram" id="diagram" viewBox="0 0 980 772" role="group" aria-label="Architecture diagram. Pipeline at the top, agent team in the middle, platform below, then safety, approval and outcome.">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5C6B7E"/></marker>
+          <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2457C5"/></marker>
+          <marker id="arrowRed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#C62F1F"/></marker>
+          <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#177A3A"/></marker>
+        </defs>
+
+        <!-- Bands -->
+        <rect class="band" x="10" y="10" width="960" height="118" rx="12"/>
+        <text class="band-label" x="22" y="28">01 — Nightly pipeline</text>
+        <rect class="band" x="10" y="142" width="960" height="240" rx="12"/>
+        <text class="band-label" x="22" y="160">02 — Agent team · hub-and-spoke</text>
+        <rect class="band" x="10" y="394" width="960" height="130" rx="12"/>
+        <text class="band-label" x="22" y="412">03 — Model, tools, knowledge &amp; memory</text>
+        <rect class="band" x="10" y="540" width="960" height="216" rx="12"/>
+        <text class="band-label" x="22" y="558">04 — Safety &amp; proof</text>
+
+        <!-- Strands runtime bus -->
+        <rect class="bus" x="22" y="350" width="936" height="18" rx="9"/>
+        <line class="tick" x1="133" y1="336" x2="133" y2="350"/>
+        <line class="tick" x1="371" y1="336" x2="371" y2="350"/>
+        <line class="tick" x1="609" y1="336" x2="609" y2="350"/>
+        <line class="tick" x1="847" y1="336" x2="847" y2="350"/>
+
+        <!-- Trust boundary: the approvals table and its only writer -->
+        <rect class="trustbox" x="272" y="562" width="240" height="184" rx="12"/>
+        <text class="trust-label" x="392" y="741" text-anchor="middle">TRUST BOUNDARY</text>
+
+        <!-- FLOWS. Every flow starts on one box and ends on another (checked in the page script). -->
+        <path id="p-sched" class="flow" d="M182 72 H218" marker-end="url(#arrow)"/>
+        <path id="p-step-lambda" class="flow" d="M388 62 H418" marker-end="url(#arrow)"/>
+        <path id="p-err" class="flow badflow" d="M418 90 H388" marker-end="url(#arrowRed)"/>
+        <path id="p-s3-lambda" class="flow" d="M638 58 H588" marker-end="url(#arrow)"/>
+        <path id="p-lambda-pg" class="flow" d="M560 104 C 560 126, 864 126, 864 104" marker-end="url(#arrow)"/>
+        <path id="p-sf-orch" class="flow" d="M300 104 V152 H490 V168" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+
+        <path id="p-orch-det" class="flow" d="M490 232 V244 H133 V272" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+        <path id="p-orch-diag" class="flow" d="M490 232 V244 H371 V272" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+        <path id="p-orch-fix" class="flow" d="M490 232 V244 H609 V272" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+        <path id="p-orch-ver" class="flow" d="M490 232 V244 H847 V272" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+
+        <path id="p-det-mcp" class="flow" d="M133 336 C 133 392, 440 380, 440 424" marker-end="url(#arrow)"/>
+        <path id="p-diag-mcp" class="flow" d="M371 336 C 371 395, 510 384, 510 424" marker-end="url(#arrow)"/>
+        <path id="p-fix-mcp" class="flow" d="M609 336 C 609 392, 580 392, 580 424" marker-end="url(#arrow)"/>
+        <path id="p-ver-mcp" class="flow" d="M847 336 C 847 392, 650 392, 650 424" marker-end="url(#arrow)"/>
+        <path id="p-mcp-rag" class="flow" d="M390 468 H366" marker-end="url(#arrow)"/>
+        <path id="p-mcp-mem" class="flow" d="M690 468 H714" marker-end="url(#arrow)"/>
+        <path id="p-mcp-sandbox" class="flow" d="M430 512 C 430 548, 240 536, 240 572" marker-end="url(#arrow)"/>
+        <path id="p-appr-check" class="flow okflow" d="M392 572 C 392 540, 500 548, 500 512" marker-end="url(#arrowGreen)"/>
+        <path id="p-mcp-pg" class="flow" d="M672 424 C 672 400, 728 400, 728 380 V 140 C 728 122, 930 130, 930 104" marker-end="url(#arrow)"/>
+
+        <path id="p-fix-guard" class="flow badflow" d="M698 336 V572" marker-end="url(#arrowRed)"/>
+        <path id="p-wait" class="flow" d="M250 104 V121 H14 V702 H22" marker-end="url(#arrow)"/>
+        <path id="p-human-endpoint" class="flow okflow" d="M242 702 H282" marker-end="url(#arrowGreen)"/>
+        <path id="p-endpoint-approvals" class="flow okflow" d="M392 670 V644" marker-end="url(#arrowGreen)"/>
+        <path id="p-sf-pub" class="flow okflow" d="M303 40 V34 H975 V702 H958" marker-end="url(#arrowGreen)"/>
+
+        <text class="flabel" x="613" y="50" text-anchor="middle">reads</text>
+        <text class="flabel" x="640" y="138" text-anchor="middle">writes</text>
+        <text class="flabel" x="30" y="116">waitForTaskToken → SNS email</text>
+        <text class="flabel" x="402" y="660">task token · one-use</text>
+        <text class="flabel" x="706" y="540">blocked before it lands</text>
+        <text class="flabel" x="640" y="31" text-anchor="middle">last state: publish dashboard</text>
+
+        <text class="bus-label" x="498" y="363" text-anchor="middle">Strands runtime (Mac in Ph 1–7 · Lambda in Ph 8) · reasons via Bedrock</text>
+
+        <!-- BAND 01: PIPELINE -->
+        <g class="node sys" data-node="scheduler" tabindex="0" role="button" aria-label="EventBridge Scheduler">
+          <rect class="main" x="22" y="40" width="160" height="64" rx="10"/>
+          <text class="tag" x="36" y="58">Trigger</text>
+          <text class="title" x="36" y="76">EventBridge</text>
+          <text class="sub" x="36" y="92">02:00 daily • off in Ph 1–7</text>
+        </g>
+        <g class="node sys" data-node="stepfunctions" tabindex="0" role="button" aria-label="Step Functions">
+          <rect class="main" x="218" y="40" width="170" height="64" rx="10"/>
+          <text class="tag" x="232" y="58">Workflow</text>
+          <text class="title" x="232" y="76">Step Functions</text>
+          <text class="sub" x="232" y="92">Pipeline + approval wait</text>
+        </g>
+        <g class="node" data-node="lambda" tabindex="0" role="button" aria-label="Lambda ingest and transform">
+          <rect class="main" x="418" y="40" width="170" height="64" rx="10"/>
+          <text class="tag" x="432" y="58">Compute • Mac → Lambda</text>
+          <text class="title" x="432" y="76">Ingest + Transform</text>
+          <text class="sub" x="432" y="92">The pipeline job itself</text>
+        </g>
+        <g class="node sys" data-node="s3" tabindex="0" role="button" aria-label="S3 raw files">
+          <rect class="main" x="638" y="40" width="120" height="64" rx="10"/>
+          <text class="tag" x="652" y="58">Storage</text>
+          <text class="title" x="652" y="76">S3 — raw</text>
+          <text class="sub" x="652" y="92">7 days retained</text>
+        </g>
+        <g class="node sys" data-node="postgres" tabindex="0" role="button" aria-label="Postgres analytics table">
+          <rect class="main" x="778" y="40" width="172" height="64" rx="10"/>
+          <text class="tag" x="792" y="58">Analytics • Postgres</text>
+          <text class="title" x="792" y="76">customers</text>
+          <text class="sub" x="792" y="92">3 years • 1.2M rows</text>
+        </g>
+
+        <!-- BAND 02: ORCHESTRATOR + NOTES + AGENTS -->
+        <text class="note-bad" x="24" y="184" id="alertLabel">▲ 02:14 FAILED — Column ‘cust_status’ not found</text>
+        <text class="note" x="24" y="202">Brief (6): schema diff • runbook • owner •</text>
+        <text class="note" x="24" y="216">target • rules • deadline</text>
+        <text class="note" x="24" y="232">Handoff (5): done • next • owner • evidence • do-not-touch</text>
+
+        <g class="node agent" data-node="orchestrator" tabindex="0" role="button" aria-label="Orchestrator agent">
+          <rect class="main" x="395" y="168" width="190" height="64" rx="10"/>
+          <text class="tag" x="409" y="186">Coordinator • hub</text>
+          <text class="title" x="409" y="204">Orchestrator</text>
+          <text class="sub" x="409" y="219">Briefs • validates handoffs</text>
+        </g>
+        <g class="node agent" data-node="detector" tabindex="0" role="button" aria-label="Detector agent">
+          <rect class="main" x="24" y="272" width="218" height="64" rx="10"/>
+          <text class="tag" x="38" y="290">Agent 01</text>
+          <text class="title" x="38" y="308">Detector</text>
+          <text class="sub" x="38" y="323">What failed &amp; where</text>
+        </g>
+        <g class="node agent" data-node="diagnoser" tabindex="0" role="button" aria-label="Diagnoser agent">
+          <rect class="main" x="262" y="272" width="218" height="64" rx="10"/>
+          <text class="tag" x="276" y="290">Agent 02 • RAG + Memory</text>
+          <text class="title" x="276" y="308">Diagnoser</text>
+          <text class="sub" x="276" y="323">Why, with evidence</text>
+        </g>
+        <g class="node agent" data-node="fixer" tabindex="0" role="button" aria-label="Fixer agent">
+          <rect class="main" x="500" y="272" width="218" height="64" rx="10"/>
+          <text class="tag" x="514" y="290">Agent 03 • Gated swap</text>
+          <text class="title" x="514" y="308">Fixer</text>
+          <text class="sub" x="514" y="323">Builds the fix in the sandbox</text>
+        </g>
+        <g class="node agent" data-node="verifier" tabindex="0" role="button" aria-label="Verifier agent">
+          <rect class="main" x="738" y="272" width="218" height="64" rx="10"/>
+          <text class="tag" x="752" y="290">Agent 04 • Checks</text>
+          <text class="title" x="752" y="308">Verifier</text>
+          <text class="sub" x="752" y="323">Checks twice • 4/4 pass</text>
+        </g>
+
+        <!-- BAND 03: PLATFORM -->
+        <g class="node sys" data-node="bedrock" tabindex="0" role="button" aria-label="Amazon Bedrock Nova Micro">
+          <rect class="main" x="22" y="424" width="160" height="88" rx="10"/>
+          <text class="tag" x="36" y="442">Model • Bedrock</text>
+          <text class="title" x="36" y="460">Nova Micro</text>
+          <text class="sub" x="36" y="475">Prompts + tool calls</text>
+          <text class="sub" x="36" y="490">2nd model: Ph. 7</text>
+        </g>
+        <g class="node sys" data-node="rag" tabindex="0" role="button" aria-label="RAG retrieval from Postgres pgvector">
+          <rect class="main" x="196" y="424" width="170" height="88" rx="10"/>
+          <text class="tag" x="210" y="442">Knowledge • RAG</text>
+          <text class="title" x="210" y="460">Runbook + contract</text>
+          <text class="sub" x="210" y="475">documents • vector(1024)</text>
+          <text class="sub" x="210" y="490">Runbook 4.2 • contract v3</text>
+        </g>
+        <g class="node" data-node="mcp" tabindex="0" role="button" aria-label="MCP tool servers">
+          <rect class="main" x="390" y="424" width="300" height="88" rx="10"/>
+          <text class="tag" x="404" y="438">Tools • MCP • authorises per agent</text>
+          <text class="title" x="404" y="453">Tool servers</text>
+          <text class="sub" x="404" y="467">read_job_logs • get_table_schema • save_note</text>
+          <text class="sub" x="404" y="480">search_runbook • recall_lessons • run_checks</text>
+          <text class="sub" x="404" y="493">write_test_copy • swap_tables • publish_mapping</text>
+          <text class="sub" x="404" y="506">(swap_tables and publish_mapping: approval-gated)</text>
+        </g>
+        <g class="node sys" data-node="dynamodb" tabindex="0" role="button" aria-label="DynamoDB memory">
+          <rect class="main" x="714" y="424" width="244" height="88" rx="10"/>
+          <text class="tag" x="728" y="442">Memory • DynamoDB</text>
+          <text class="title" x="728" y="460">apa-memory</text>
+          <text class="sub" x="728" y="475">Runs • incidents • lessons</text>
+          <text class="sub" x="728" y="490">Reached via MCP only • never approvals</text>
+        </g>
+
+        <!-- BAND 04: SAFETY, APPROVAL, PROOF -->
+        <g class="node" data-node="sandbox" tabindex="0" role="button" aria-label="Sandbox test copy">
+          <rect class="main" x="22" y="572" width="240" height="72" rx="10"/>
+          <text class="tag" x="36" y="590">Sandbox • Postgres</text>
+          <text class="title" x="36" y="608">customers_test</text>
+          <text class="sub" x="36" y="623">1.2M live + 4,331 new = 1,204,331</text>
+          <text class="sub" x="36" y="638">0 errors • old table kept as _prev</text>
+        </g>
+        <g class="node ok" data-node="approvals" tabindex="0" role="button" aria-label="Approvals table, separate from agent memory">
+          <rect class="main" x="282" y="572" width="220" height="72" rx="10"/>
+          <text class="tag" x="296" y="590">Approvals • DynamoDB</text>
+          <text class="title" x="296" y="608">apa-approvals</text>
+          <text class="sub" x="296" y="623">Only the endpoint can write</text>
+          <text class="sub" x="296" y="638">Hash-bound • expiring • one-use</text>
+        </g>
+        <g class="node bad" data-node="guardrails" tabindex="0" role="button" aria-label="Guardrails and policy layer">
+          <rect class="main" x="587" y="572" width="371" height="72" rx="10"/>
+          <text class="tag" x="601" y="590">Guardrails + Policy • 3 independent layers</text>
+          <text class="title" x="601" y="608">✕ Overwrite blocked</text>
+          <text class="sub" x="601" y="623">Client hook • tool-server authz • Postgres roles</text>
+          <text class="sub" x="601" y="638">Never a one-step overwrite of live</text>
+        </g>
+        <g class="node" data-node="human" tabindex="0" role="button" aria-label="Human approval via SNS email" style="--hx:1">
+          <rect class="main" x="22" y="670" width="220" height="64" rx="10" style="fill:var(--ok-soft);stroke:var(--ok)"/>
+          <text class="tag" x="36" y="688">Human • SNS email</text>
+          <text class="title" x="36" y="706">Human approves</text>
+          <text class="sub" x="36" y="721">No approval, no swap</text>
+        </g>
+        <g class="node ok" data-node="endpoint" tabindex="0" role="button" aria-label="Approve endpoint">
+          <rect class="main" x="282" y="670" width="220" height="64" rx="10"/>
+          <text class="tag" x="296" y="688">Lambda Function URL</text>
+          <text class="title" x="296" y="706">Approve endpoint</text>
+          <text class="sub" x="296" y="721">Confirm page + one-time token</text>
+        </g>
+        <g class="node ok" data-node="dashboard" tabindex="0" role="button" aria-label="Dashboard outcome">
+          <rect class="main" x="587" y="670" width="371" height="64" rx="10"/>
+          <text class="tag" x="601" y="688">Outcome • Publisher → dashboard</text>
+          <text class="title" x="601" y="706">Dashboard correct ✓ by 08:00</text>
+          <text class="sub" x="601" y="721">Step Functions runs it after sign-off • X-Ray trace</text>
+        </g>
+
+        <circle id="packet" cx="22" cy="72" r="7" fill="#2457C5" stroke="white" stroke-width="2" opacity="0"/>
+      </svg>
+    </div>
+
+    <div class="legend">
+      <span><i class="sw a"></i> Agent (Strands)</span>
+      <span><i class="sw s"></i> AWS managed / storage</span>
+      <span><i class="sw g"></i> Approved / verified</span>
+      <span><i class="sw r"></i> Blocked / failed</span>
+      <span><i class="sw t"></i> Trust boundary</span>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:12px">Agents never get DB credentials — MCP tools do, and the tool server authorises each agent.</span>
+    </div>
+  </section>
+
+  <!-- DETAIL + STEPS -->
+  <div class="grid2">
+    <article class="card detail" id="detailCard">
+      <p class="kicker">Tap a box — what it does</p>
+      <div id="detailContent"></div>
+    </article>
+
+    <article class="card">
+      <p class="kicker">The replay • The incident in 12 beats</p>
+      <h2>02:00 to 08:00, in order</h2>
+      <ol class="steps-list" id="stepsList"></ol>
+    </article>
+  </div>
+
+  <!-- AGENTS -->
+  <section class="section" aria-labelledby="agents-h">
+    <div class="section-head">
+      <div>
+        <p class="kicker">The team</p>
+        <h2 id="agents-h">Four specialists, one coordinator — hub-and-spoke</h2>
+      </div>
+      <p style="color:var(--muted);font-size:14px;max-width:44ch;margin:0">Same Strands runtime, different system prompt and tool allow-list — and the allow-list is enforced by the tool server per agent identity, not just by the runtime. Every handoff passes through the Orchestrator.</p>
+    </div>
+    <div class="agents" id="agentCards"></div>
+  </section>
+
+  <!-- DATA -->
+  <section class="section" aria-labelledby="data-h">
+    <p class="kicker">Data • Four stores, one job each</p>
+    <h2 id="data-h" style="font-size:24px;margin:6px 0 0;letter-spacing:-.02em">Why this shape stays under the $5 budget</h2>
+    <div class="three">
+      <article class="card store">
+        <p class="kicker">Raw files</p>
+        <h3 style="margin-top:6px">S3 — <code>…-raw</code></h3>
+        <p>Nightly extracts as they arrived — each file is a <strong>delta</strong> (new and changed rows), kept 7 days then lifecycle-expired. The renamed column is visible in the file itself, which is what makes the incident reproducible.</p>
+        <p style="margin-top:8px"><code>s3://…/raw/dt=2026-11-18/customers.csv</code></p>
+      </article>
+      <article class="card store">
+        <p class="kicker">Analytics + RAG</p>
+        <h3 style="margin-top:6px">PostgreSQL + pgvector</h3>
+        <p><code>customers</code> (live), <code>customers_test</code> (sandbox), <code>customers_prev</code> (kept after a swap, for rollback), <code>applied_approvals</code> (one row per used approval — what makes it single-use) and <code>documents</code> (runbook + contract chunks, <code>vector(1024)</code>) in one database. Docker on the Mac in Phases 1–7, RDS for the Phase 8 demo day only.</p>
+        <p style="margin-top:8px"><strong>How RAG flows:</strong> Diagnoser asks → MCP <code>search_runbook</code> embeds the question → pgvector returns the nearest chunks → Diagnoser answers citing them. No chunk, no claim.</p>
+      </article>
+      <article class="card store">
+        <p class="kicker">Memory</p>
+        <h3 style="margin-top:6px">DynamoDB — <code>apa-memory</code></h3>
+        <p>Short-term: this run's findings. Long-term: past incidents and fixes — e.g. September's rename, where the fix was <em>update the mapping, don't rebuild</em>. Agents reach it only through the MCP tools <code>save_note</code> and <code>recall_lessons</code>. It holds no approvals.</p>
+      </article>
+      <article class="card store">
+        <p class="kicker">Approvals</p>
+        <h3 style="margin-top:6px">DynamoDB — <code>apa-approvals</code></h3>
+        <p>A separate table in a separate trust boundary. Only the approve endpoint can write to it; agent roles and the memory client cannot. <code>swap_tables()</code> only reads it and refuses unless a record matches this incident and this test copy, is unexpired, and is not yet in the <code>applied_approvals</code> ledger.</p>
+      </article>
+    </div>
+
+    <div class="safety">
+      <article class="card">
+        <div class="big">🛡️</div>
+        <h3>Guardrails are code, not a prompt</h3>
+        <p>The Fixer's first idea — rebuild live from S3 — would trade 3 years for 7 days. Three layers refuse it independently: a client-side hook, the tool server (which knows which agent is calling), and the Postgres role the Fixer connects with. In the build, Phase 4 forces this attempt rather than waiting for the model to try it.</p>
+      </article>
+      <article class="card">
+        <div class="big">🧪</div>
+        <h3>Sandbox, then check, then ask</h3>
+        <p>The fix is built in <code>customers_test</code> — a clone of live plus tonight's file. The Verifier runs its 4 checks on the test copy first, before they ever run on live, and the result goes in the approval email. Only a test copy that passes can request approval.</p>
+      </article>
+      <article class="card">
+        <div class="big">✋</div>
+        <h3>Approval is enforced by the tool — and reversible</h3>
+        <p><code>swap_tables()</code> checks <code>apa-approvals</code> itself, in a store no agent can write. If nobody approves, the wait times out and live is untouched. The swap is one atomic rename that keeps <code>customers_prev</code>, so a failed post-swap check is rolled back by the Fixer.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- WHERE IT RUNS -->
+  <section class="section" aria-labelledby="runs-h">
+    <p class="kicker">Where it runs</p>
+    <h2 id="runs-h" style="font-size:24px;margin:6px 0 0;letter-spacing:-.02em">On your Mac while you build, in AWS for one demo day</h2>
+    <div class="three">
+      <article class="card store">
+        <p class="kicker">Phases 1–7 • your Mac</p>
+        <h3 style="margin-top:6px">Code local, orchestration in the cloud</h3>
+        <p>The pipeline job, the agents, the MCP tool servers and the publisher run on your Mac with <code>uv</code>, against Postgres in Docker. Step Functions and EventBridge are real AWS from the start: a small worker on the Mac polls Step Functions Activities for work and only dials out, so there is no open port and no tunnel (ADR-012). Everything the Mac does in AWS runs as the scoped <code>kazi-dev-apa</code> role, never an admin profile.</p>
+      </article>
+      <article class="card store">
+        <p class="kicker">Phase 8 • one demo day</p>
+        <h3 style="margin-top:6px">The same handlers, as Lambdas</h3>
+        <p>The worker's four tasks become Lambda invokes, Postgres moves to RDS, and a NAT gateway lets the Lambdas reach Bedrock. All of it sits behind one <code>EnableDemo</code> switch: on in dev for the recorded demo, off again the same day. Prod never gets RDS or a NAT gateway.</p>
+      </article>
+      <article class="card store">
+        <p class="kicker" style="color:var(--warn)">Still open • Build Plan §12</p>
+        <h3 style="margin-top:6px">Two decisions to make</h3>
+        <p>• Do the evals run in CI, with a dev-only role of their own that can call only the two models (never a wider plan role), or on the Mac only?<br>• Which second model does Phase 7 compare against, when the region guardrail allows only ap-southeast-2 and us-east-1?</p>
+        <p>ADR-011 and ADR-012 stay drafts until you approve the plan.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- DEPLOY -->
+  <section class="deploy" aria-label="Deployment and cost">
+    <div>
+      <p class="kicker" style="color:#9AB6F5">How it ships • the platform you already built</p>
+      <h2 style="margin:6px 0 0;font-size:20px">One project in your aws-data-platform repo</h2>
+      <div class="flowline">
+        <span class="box">Pull request</span><span class="arr">→</span>
+        <span class="box">Lint + Guard rules</span><span class="arr">→</span>
+        <span class="box">Preview dev + prod (read-only OIDC)</span><span class="arr">→</span>
+        <span class="box">Squash merge</span><span class="arr">→</span>
+        <span class="box">Deploy apa: dev, then prod after your approval</span>
+      </div>
+      <p>The project lives in <code>projects/apa/</code>, with one stack folder per phase and its own <code>deploy-apa.yml</code>; stacks are named <code>kazi-&lt;env&gt;-apa-&lt;name&gt;</code>. The pipeline packages Lambda code into the platform's artifacts bucket, and a stack may create a role only if it carries the platform's permissions boundary. Each new AWS service is added to the pipeline's service role first, in its own reviewed change that you deploy by hand. Every incident leaves one trace in CloudWatch + X-Ray, replayable end to end.</p>
+    </div>
+    <div class="cost">
+      <span>While building</span>
+      <strong>$1–3 / mo</strong>
+      <span style="text-transform:none;letter-spacing:0;font-family:var(--font)">Bedrock tokens + S3<br>RDS + NAT for the demo day only<br>The platform's $5 brake is the backstop</span>
+    </div>
+  </section>
+
+  <div class="foot">
+    <span>Architecture v1.4 (26 Nov 2026) · matches Build Plan v2.4 and Learning Guide v3.3 · 9 phases, 20 terms, 12 ADRs.</span>
+    <span style="font-family:var(--mono);font-size:12px">20 terms → Phases 1–7 • Evals: 20-case set in Phase 5</span>
+  </div>
+</div>
+
+<script>
+
+(function(){
+  'use strict';
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var DETAILS = {
+    scheduler:{role:'Trigger • EventBridge Scheduler',title:'Fires once a night, at 02:00',body:'No polling, no server waiting. Scheduler starts Step Functions, which starts the load. If nothing fails, no agent ever wakes up — and you pay nothing for agents that night.',list:['<strong>Cron:</strong> nightly 02:00 (Sydney time zone)','<strong>Phases 1–7:</strong> created but disabled — your Mac is asleep at 02:00, so build runs start with <code>aws stepfunctions start-execution</code>; enabled for one test evening and the Phase 8 demo','<strong>Cost:</strong> essentially $0 at one run/day']},
+    stepfunctions:{role:'Workflow • Step Functions',title:'Owns the pipeline — and the approval wait',body:'Runs ingest → transform → load, records each state, and when the load fails it catches the error and invokes the Orchestrator. In Phases 1–7 its work states (load, incident, resume, publish) are Step Functions Activities served by a small worker on your Mac that only dials out — no open port, no tunnel (ADR-012); in Phase 8 they become Lambda invokes. When a live change needs a human it also holds the wait: a <code>waitForTaskToken</code> step pauses the workflow with nothing running (so no 15-minute Lambda limit) until the approve endpoint resumes it or the timeout expires.',list:['<strong>On success:</strong> run ends, dashboard is fresh','<strong>On failure:</strong> invokes Orchestrator with job + timestamp','<strong>Approval wait:</strong> SNS email out, task token held; 30-minute timeout leaves live untouched and the incident open']},
+    lambda:{role:'Compute • Mac worker (Ph 1–7) → Lambda (Ph 8)',title:'Ingest + transform — the job that actually breaks',body:'In Phases 1–7 this handler runs on your Mac, called by Step Functions through the worker; in Phase 8 the same handler is a Lambda. It reads tonight’s CSV delta from S3, maps columns using a versioned mapping (v1 expects <code>cust_status</code>), and writes to <code>customers</code>. At 02:14 it looks for that column, finds <code>customer_status</code> instead, and stops. That stop is correct — loading wrong data would be worse.',list:['<strong>Language:</strong> Python 3.13 with <code>uv</code>; in Phase 8 the pipeline packages it for Lambda','<strong>Failure:</strong> <code>Column cust_status not found</code> — schema drift','<strong>Agents don’t edit this code</strong> — the fix is a new mapping version, published through an approval-gated tool']},
+    s3:{role:'Storage • S3 raw',title:'The raw file, exactly as it arrived',body:'Keeps 7 days of nightly extracts. Each file is a delta — new and changed rows, not a snapshot — so 7 days of files is not 3 years of history. Any “fix” that rebuilds live from S3 alone destroys history, which is why the guardrail blocks it.',list:['<strong>Bucket:</strong> <code>kazi-&lt;env&gt;-apa-raw-&lt;account&gt;-&lt;region&gt;</code>','<strong>Retention:</strong> 7 days, lifecycle expiry; deleted with its stack, like every bucket on the platform (decision D13)','<strong>Key:</strong> <code>raw/dt=YYYY-MM-DD/customers.csv</code>']},
+    postgres:{role:'Analytics • PostgreSQL + pgvector',title:'Live table, test copy, rollback copy and vectors — one database',body:'Holds <code>customers</code> (3 years, ~1.2M rows, columns follow data contract v3 — including <code>cust_status</code>), <code>customers_test</code> (sandbox), <code>customers_prev</code> (the old live table after a swap), <code>applied_approvals</code> (the single-use ledger) and <code>documents</code> with embeddings. One DB to learn and pay for, instead of a separate vector store (OpenSearch Serverless alone would be ~$70/mo).',list:['<strong>Write control is Postgres roles</strong>, not IAM: the pipeline role loads live; the Fixer’s role can only write <code>customers_test</code>; the swap runs as a separate role reachable only through <code>swap_tables</code>','<strong>Phases 1–7:</strong> Docker on your Mac (decided — ADR-004)','<strong>Demo:</strong> RDS in Phase 8, deleted afterwards']},
+    orchestrator:{role:'Orchestrator • Coordinator',title:'The hub — every handoff goes through it',body:'Started by Step Functions when the load fails. Reads the goal — <em>restore the nightly load, lose no data, before 08:00</em> — splits it into tasks, writes a brief for each specialist, validates every handoff before passing work on, and decides when a human must be asked by returning “approval needed” to Step Functions. It never touches data itself.',list:['<strong>Brief (6 items):</strong> schema diff, runbook 4.2, table owner, target (staging), rules, deadline 08:00 — the 40,000 log lines stay out','<strong>Handoff (5 fields):</strong> typed package — <code>done / next / owner / evidence / do-not-touch</code>, validated on receipt','<strong>Tech:</strong> Strands <code>Agent</code>, Bedrock Nova Micro • Phase 6']},
+    detector:{role:'Agent 01 • Detector',title:'Finds what failed, cites the tool result',body:'Perceive → plan → act → observe. Reads the error, plans a schema comparison, calls <code>get_table_schema()</code> and <code>read_job_logs()</code> via MCP, and ends its loop with a finding grounded in what the tools returned — not model text. Its handoff goes back to the Orchestrator, not straight to the next agent.',list:['<strong>Tools:</strong> <code>read_job_logs</code>, <code>get_table_schema</code>','<strong>Finding:</strong> source now has <code>customer_status</code>','<strong>Terms:</strong> Agent Loop, Tool Use, Grounding, MCP']},
+    diagnoser:{role:'Agent 02 • Diagnoser',title:'Explains why — and proves it',body:'Before answering, it searches: RAG retrieves runbook 4.2 (column renames) + data contract v3, and Memory (<code>recall_lessons</code> through MCP) recalls September’s similar rename. Every claim carries a source; a claim with no source is written “unknown”.',list:['<strong>Tools:</strong> <code>search_runbook</code> (pgvector), <code>recall_lessons</code> (memory, via MCP)','<strong>Evidence:</strong> log 02:14, schema diff, change note 17:40 yesterday','<strong>Terms:</strong> RAG, Memory, Grounding']},
+    fixer:{role:'Agent 03 • Fixer',title:'No direct live write — only a gated swap after approval',body:'Identity <code>fixer-01</code>. Its Postgres role can read production and write only <code>customers_test</code>. Its overwrite idea is blocked, so it re-plans: <code>write_test_copy</code> clones live and loads tonight’s file with mapping v2 (<code>customer_status → cust_status</code>). The one exception is <code>swap_tables</code> (with <code>publish_mapping</code>): the tool server runs it only after a passed test copy <em>and</em> a matching approval record that it checks itself. The swap is one atomic rename and keeps <code>customers_prev</code>. If the Verifier later reports a failed live check, the Orchestrator briefs the Fixer to run <code>swap_tables</code> in rollback mode.',list:['<strong>Tools:</strong> <code>write_test_copy</code> (staging), <code>swap_tables</code> (swap and rollback) + <code>publish_mapping</code> (live, approval-gated only)','<strong>Sandbox result:</strong> 1,204,331 rows (1.2M + 4,331), 0 errors','<strong>Terms:</strong> Sandboxing, Guardrails, Identity, Human-in-the-Loop']},
+    verifier:{role:'Agent 04 • Verifier',title:'Checks with a checklist, not a feeling — twice',body:'Runs the same 4 checks first on the test copy (so the approver sees the result) and again on live after the swap: row count = live-before + file rows; columns match contract v3; oldest record (2023-11-14) still there; a 100-row sample from tonight’s file matches what landed. The checks are SQL assertions run by the <code>run_checks</code> tool through MCP. The Verifier only reports: if a post-swap check fails, the Orchestrator briefs the Fixer to roll back from <code>customers_prev</code>.',list:['<strong>Tool:</strong> <code>run_checks</code> (read-only)','<strong>Result tonight:</strong> 4 / 4 pass, before and after','<strong>Terms:</strong> Evaluation (Evals), Observability']},
+    human:{role:'Human-in-the-Loop • SNS → email',title:'The pause most tutorials skip',body:'Policy: any live-table change needs a human. Step Functions emails the on-call engineer (you, wearing your second hat) via SNS with what broke, what was tested, the 4/4 pre-check, and exactly what will change. The link opens a confirmation page — it never approves on a bare click, so a mail scanner that prefetches links can’t approve. Approved 02:52.',list:['<strong>Payload:</strong> cause + test evidence + exact swap + mapping v2','<strong>Decision:</strong> APPROVED 02:52','<strong>Timeout path:</strong> live table left alone, incident stays open']},
+    endpoint:{role:'Approve endpoint • Lambda Function URL',title:'The only door into the approvals table',body:'Serves the confirmation page, accepts the click (POST with the one-time task token), writes the approval record to <code>apa-approvals</code>, and tells Step Functions to resume. It is plain code — no model, and no agent can call it.',list:['<strong>Record:</strong> incident id, approver, SHA of the test copy, the exact swap, expiry (written with a conditional put, so it cannot be overwritten)','<strong>Token:</strong> Step Functions’ own task token — AWS-issued, unguessable, accepted once','<strong>Cost:</strong> Function URL is free; Lambda free tier covers it']},
+    approvals:{role:'Approvals • DynamoDB apa-approvals',title:'Separate table, separate trust boundary',body:'Agent roles (and the memory client) have no write access to this table — enforced by IAM on the table itself. <code>swap_tables()</code> reads it and refuses unless a record matches this incident and this test copy, is unexpired, and is unused. The swap tool only ever reads it: single use is enforced in Postgres, where the swap transaction records the approval ID under a unique key in <code>applied_approvals</code>, so a replay fails.',list:['<strong>Table:</strong> <code>apa-approvals</code> (<code>kazi-&lt;env&gt;-apa-approvals</code> in AWS)','<strong>Keys:</strong> <code>PK=incident#&lt;id&gt;, SK=approval#…</code>; attributes test_hash, expires_at, approved_at','<strong>Why separate:</strong> memory is written by agents; approvals must not be']},
+    bedrock:{role:'Model • Amazon Bedrock',title:'Nova Micro by default — cheap enough to learn on',body:'Hosted API, no fine-tuning, no model to version — you version prompts and code in Git instead. Every agent reasons through it at every step, which is why it sits on the Strands bus rather than on one arrow. A second model is compared on the same evals in Phase 7 so the cost/quality trade-off shows in numbers — Claude Haiku only if the region guardrail allows it.',list:['<strong>Default:</strong> Nova Micro (ADR-002)','<strong>Access:</strong> serverless models are enabled automatically now; Anthropic models need a one-time use-case form','<strong>Region guardrail:</strong> the plain ID <code>amazon.nova-micro-v1:0</code> works in Sydney (21 Nov run). The account’s SCP allows only ap-southeast-2 and us-east-1, so cross-region profiles (<code>apac.</code>, <code>au.</code>, <code>us.</code>) are refused — decide the Phase 7 comparison in ADR-002']},
+    mcp:{role:'Tools • MCP / FastMCP',title:'Agents never get DB credentials. Tools do — and the server checks who is calling.',body:'Every agent-to-system connection goes through MCP in the same standard shape. Each agent connects with its own identity, and the tool server enforces that agent’s allow-list itself; the runtime’s tool registry is a convenience, not the security boundary. Each tool returns data, never prose. An agent that guesses instead of calling a tool is a bug.',list:['<strong>Tools (9):</strong> <code>read_job_logs</code>, <code>get_table_schema</code>, <code>search_runbook</code>, <code>save_note</code>, <code>recall_lessons</code>, <code>write_test_copy</code>, <code>run_checks</code>, <code>swap_tables</code>, <code>publish_mapping</code>','<strong>Gated:</strong> <code>swap_tables</code> and <code>publish_mapping</code> read <code>apa-approvals</code> themselves','<strong>Terms:</strong> MCP, Tool Use, Agent Protocols, A2A between agents']},
+    rag:{role:'Knowledge • RAG — PostgreSQL + pgvector',title:'Retrieval: the model reads the runbook, it doesn’t remember it',body:'Runbooks and the data contract are chunked and embedded into the <code>documents</code> table (<code>vector(1024)</code>) in the same Postgres as the analytics tables — no separate vector store to pay for. In step 4 the flow is drawn end to end: Diagnoser → MCP <code>search_runbook</code> → pgvector returns runbook 4.2 + contract v3 chunks → Diagnoser reasons over that text and cites it.',list:['<strong>Flow:</strong> Diagnoser → <code>search_runbook</code> (MCP) → pgvector → chunks back','<strong>Grounding rule:</strong> a claim with no retrieved source is written “unknown”','<strong>Term:</strong> RAG (Retrieval-Augmented Generation) • Phase 3']},
+    dynamodb:{role:'Memory • DynamoDB apa-memory',title:'Notepad tonight, filing cabinet long-term',body:'Short-term: this run’s findings (error line, schema diff). Long-term: past incidents — <code>PK=lesson#sept-rename</code> — and the trace index (X-Ray trace id per step). Agents read and write this table only through the MCP tools <code>save_note</code> and <code>recall_lessons</code>, which is exactly why approvals are not stored in it.',list:['<strong>Table:</strong> <code>apa-memory</code> (<code>kazi-&lt;env&gt;-apa-memory</code> in AWS)','<strong>Keys:</strong> <code>PK=incident#… / SK=note#…</code>','<strong>Terms:</strong> Memory, Observability']},
+    guardrails:{role:'Safety • Guardrails + Policy Layer',title:'A guardrail is “never”. A policy is “yes, if…”.',body:'Guardrail: never overwrite a live table in one step — hard block, no override. Policy: live writes require human approval — conditional. Three independent layers enforce them: (1) a client-side hook blocks before the call lands; (2) the tool server authorises each agent by identity; (3) the Fixer’s Postgres role cannot write <code>customers</code> at all. None of it relies on asking the model to behave.',list:['<strong>Tonight:</strong> overwrite attempt BLOCKED, logged, live table byte-identical','<strong>In the build:</strong> Phase 4 forces the attempt so the block is provable, instead of hoping the model tries it','<strong>Terms:</strong> Guardrails, Policy Layer, Agent Identity']},
+    sandbox:{role:'Sandbox • customers_test',title:'A flight simulator for the fix',body:'Built as a clone of live plus tonight’s file, loaded with the corrected mapping: 1,200,000 live rows + 4,331 new = 1,204,331, 0 errors. Crash as often as you like — live is untouched, proven by row count + hash before and after. After the swap, the old live table stays as <code>customers_prev</code> for rollback.',list:['<strong>Result:</strong> 1,204,331 rows, 0 errors','<strong>Live during test:</strong> untouched (verified)','<strong>Term:</strong> Sandboxing (Phase 4)']},
+    dashboard:{role:'Outcome • Publisher + Observability',title:'By 08:00 — correct numbers, full record',body:'A static page can’t query Postgres, so after the Verifier signs off Step Functions’ last state runs a publisher (a worker task in Phases 1–7, a Lambda in Phase 8) that reads the verified numbers and writes them to the dashboard — a local file; hosting it is optional. Behind it: one X-Ray trace per incident — who acted, which tool, what came back, who approved — replayable end to end. That trace is your portfolio proof.',list:['<strong>Checks:</strong> 4/4 pass on live, history intact','<strong>Trace:</strong> CloudWatch + X-Ray, OTel emitter','<strong>Terms:</strong> Agent Observability, Agentic Pipeline']}
+  };;
+
+  // Each flow: [from box, to box].
+  var PATH_NODES = {
+    'p-sched':['scheduler','stepfunctions'],
+    'p-step-lambda':['stepfunctions','lambda'],
+    'p-err':['lambda','stepfunctions'],
+    'p-s3-lambda':['s3','lambda'],
+    'p-lambda-pg':['lambda','postgres'],
+    'p-sf-orch':['stepfunctions','orchestrator'],
+    'p-orch-det':['orchestrator','detector'],
+    'p-orch-diag':['orchestrator','diagnoser'],
+    'p-orch-fix':['orchestrator','fixer'],
+    'p-orch-ver':['orchestrator','verifier'],
+    'p-det-mcp':['detector','mcp'],
+    'p-diag-mcp':['diagnoser','mcp'],
+    'p-fix-mcp':['fixer','mcp'],
+    'p-ver-mcp':['verifier','mcp'],
+    'p-mcp-rag':['mcp','rag'],
+    'p-mcp-mem':['mcp','dynamodb'],
+    'p-mcp-sandbox':['mcp','sandbox'],
+    'p-appr-check':['approvals','mcp'],
+    'p-mcp-pg':['mcp','postgres'],
+    'p-fix-guard':['fixer','guardrails'],
+    'p-wait':['stepfunctions','human'],
+    'p-human-endpoint':['human','endpoint'],
+    'p-endpoint-approvals':['endpoint','approvals'],
+    'p-sf-pub':['stepfunctions','dashboard']
+  };;
+
+  // Each hop: [flow id, label on the moving tag]. A leading "~" runs the flow backwards (a handoff back to the hub).
+  var STEPS = [
+ {
+  "time": "02:00",
+  "title": "The nightly load starts",
+  "short": "EventBridge starts the run. The load reads tonight’s file from S3 and writes it into Postgres.",
+  "desc": "EventBridge fires at 02:00 (in Phases 1–7 the schedule is off and you start the run yourself) and Step Functions starts the pipeline. The load — a task on your Mac worker in Phases 1–7, a Lambda in Phase 8 — reads tonight’s file from S3 (the arrow runs S3 → job: a read), then writes to Postgres along the lane beneath.",
+  "hops": [
+   [
+    "p-sched",
+    "02:00 start"
+   ],
+   [
+    "p-step-lambda",
+    "run the load"
+   ],
+   [
+    "p-s3-lambda",
+    "tonight’s file"
+   ],
+   [
+    "p-lambda-pg",
+    "load rows"
+   ]
+  ],
+  "detail": "lambda"
+ },
+ {
+  "time": "02:14",
+  "title": "Transform fails — schema drift",
+  "short": "The load expects cust_status, but tonight’s file has customer_status, so it stops. Step Functions catches the error and calls the Orchestrator.",
+  "desc": "The load looks for cust_status, finds customer_status, and stops — correct, because loading wrong data would be worse. Step Functions catches the error and invokes the Orchestrator with the job and timestamp. On a good night no agent ever runs.",
+  "hops": [
+   [
+    "p-err",
+    "✕ column missing"
+   ],
+   [
+    "p-sf-orch",
+    "job + 02:14"
+   ]
+  ],
+  "detail": "stepfunctions"
+ },
+ {
+  "time": "02:15",
+  "title": "Detector finds what failed",
+  "short": "The Orchestrator gives the Detector a 6-item brief, not 40,000 log lines. The Detector reads the logs and the schema through MCP tools.",
+  "desc": "The Orchestrator briefs the Detector (6 items, not 40,000 log lines). The Detector calls read_job_logs and get_table_schema through MCP, and the tool server checks it is allowed to. Finding: the source renamed the column yesterday at 17:40.",
+  "hops": [
+   [
+    "p-orch-det",
+    "brief · 6 items"
+   ],
+   [
+    "p-det-mcp",
+    "logs + schema"
+   ]
+  ],
+  "detail": "detector"
+ },
+ {
+  "time": "02:17",
+  "title": "Diagnoser explains why, with evidence",
+  "short": "The Diagnoser searches runbook 4.2 (RAG) and recalls September’s rename (memory): update the mapping, don’t rebuild.",
+  "desc": "The Detector’s handoff comes back through the Orchestrator, which validates it and briefs the Diagnoser. RAG: search_runbook → pgvector returns runbook 4.2 + contract v3. Memory (recall_lessons) recalls September’s rename: update the mapping, don’t rebuild.",
+  "hops": [
+   [
+    "~p-orch-det",
+    "handoff"
+   ],
+   [
+    "p-orch-diag",
+    "brief"
+   ],
+   [
+    "p-diag-mcp",
+    "search + recall"
+   ],
+   [
+    "p-mcp-rag",
+    "search_runbook"
+   ],
+   [
+    "p-mcp-mem",
+    "recall_lessons"
+   ]
+  ],
+  "detail": "diagnoser"
+ },
+ {
+  "time": "02:21",
+  "title": "Fixer tries the fast way — BLOCKED",
+  "short": "The Fixer first tries to rebuild live from S3, which would lose 3 years of history. The guardrail blocks it, and live is unchanged.",
+  "desc": "Cause + evidence go back through the Orchestrator to the Fixer. Its first idea, rebuild live from S3, would swap 3 years for 7 days. Follow the red arrow: the guardrail blocks it, logs it, and live is unchanged. The Fixer must re-plan. This block is the system working.",
+  "hops": [
+   [
+    "~p-orch-diag",
+    "handoff"
+   ],
+   [
+    "p-orch-fix",
+    "brief"
+   ],
+   [
+    "p-fix-guard",
+    "✕ overwrite live"
+   ]
+  ],
+  "detail": "guardrails"
+ },
+ {
+  "time": "02:34",
+  "title": "Fixer tests the real fix in the sandbox",
+  "short": "The Fixer builds the fix in a sandbox copy instead: 1,204,331 rows, 0 errors. Live is still untouched.",
+  "desc": "write_test_copy clones live into customers_test and loads tonight’s file with mapping v2 (customer_status → cust_status): 1,200,000 + 4,331 = 1,204,331 rows, 0 errors. Live is untouched, proven by count + hash.",
+  "hops": [
+   [
+    "p-fix-mcp",
+    "write_test_copy"
+   ],
+   [
+    "p-mcp-sandbox",
+    "clone + load v2"
+   ]
+  ],
+  "detail": "sandbox"
+ },
+ {
+  "time": "02:38",
+  "title": "Verifier checks the test copy first",
+  "short": "Before anyone is asked, the Verifier runs the 4 checks on the test copy: 4/4 pass.",
+  "desc": "Before anyone is asked to approve, the Verifier runs the 4 checks on customers_test through MCP: row count, columns vs contract v3, oldest record 2023-11-14 intact, 100-row sample from tonight’s file. 4/4 pass, and the result goes in the approval email.",
+  "hops": [
+   [
+    "~p-orch-fix",
+    "handoff"
+   ],
+   [
+    "p-orch-ver",
+    "brief"
+   ],
+   [
+    "p-ver-mcp",
+    "run_checks"
+   ],
+   [
+    "p-mcp-sandbox",
+    "4 checks"
+   ]
+  ],
+  "detail": "verifier"
+ },
+ {
+  "time": "02:40",
+  "title": "Approval requested — the workflow pauses",
+  "short": "Step Functions emails the approval request and pauses. If nobody approves, live is left alone.",
+  "desc": "The Orchestrator returns “approval needed” to Step Functions, which sends the SNS email (what broke, what was tested, 4/4, exactly what changes) and pauses on waitForTaskToken. No Lambda is waiting, and a timeout leaves live alone.",
+  "hops": [
+   [
+    "~p-orch-ver",
+    "handoff · 4/4"
+   ],
+   [
+    "~p-sf-orch",
+    "approval needed"
+   ],
+   [
+    "p-wait",
+    "SNS email · wait"
+   ]
+  ],
+  "detail": "human"
+ },
+ {
+  "time": "02:52",
+  "title": "Human approves — through the one door",
+  "short": "You approve on a confirm page. Only the approve endpoint can write the approval record.",
+  "desc": "The link opens a confirmation page, so a scanner prefetching the email can’t approve. The click goes to the approve endpoint, which writes an approval record to apa-approvals (a conditional put), bound to this incident, the test copy’s hash and an expiry. No agent has a write path to that table.",
+  "hops": [
+   [
+    "p-human-endpoint",
+    "confirm click"
+   ],
+   [
+    "p-endpoint-approvals",
+    "approval record"
+   ]
+  ],
+  "detail": "endpoint"
+ },
+ {
+  "time": "03:01",
+  "title": "Swap: test copy goes live",
+  "short": "The swap tool checks the approval itself, then swaps the test copy into live and keeps the old table for rollback.",
+  "desc": "Step Functions resumes the Orchestrator, which tells the Fixer to run swap_tables. The tool reads apa-approvals itself: no matching, unexpired, unused record, no swap (“unused” means the approval ID is not yet in the applied_approvals ledger in Postgres). Found, so it renames customers_test → customers in one transaction that also records the approval ID, keeps the old table as customers_prev, and publishes mapping v2. However confident the agent is, the tool decides.",
+  "hops": [
+   [
+    "p-sf-orch",
+    "resume"
+   ],
+   [
+    "p-orch-fix",
+    "brief: swap"
+   ],
+   [
+    "p-fix-mcp",
+    "swap_tables"
+   ],
+   [
+    "p-appr-check",
+    "approval ✓"
+   ],
+   [
+    "p-mcp-sandbox",
+    "customers_test"
+   ],
+   [
+    "p-mcp-pg",
+    "swap into live"
+   ]
+  ],
+  "detail": "approvals"
+ },
+ {
+  "time": "03:05",
+  "title": "Verifier checks live — 4/4 pass",
+  "short": "The Verifier re-runs the 4 checks on live: 4/4 pass, so the incident closes.",
+  "desc": "The Fixer’s handoff goes through the Orchestrator to the Verifier, which re-runs the 4 checks on the live table through MCP. 4/4 pass, so the incident closes. Had any failed, the Orchestrator would brief the Fixer to roll back from customers_prev (the Verifier only reports) and the incident would stay open.",
+  "hops": [
+   [
+    "~p-orch-fix",
+    "handoff"
+   ],
+   [
+    "p-orch-ver",
+    "brief"
+   ],
+   [
+    "p-ver-mcp",
+    "run_checks"
+   ],
+   [
+    "p-mcp-pg",
+    "checks on live"
+   ]
+  ],
+  "detail": "verifier"
+ },
+ {
+  "time": "03:06",
+  "title": "Dashboard correct, trace recorded",
+  "short": "Step Functions publishes the dashboard: correct numbers well before 08:00, and one trace of every step.",
+  "desc": "On sign-off the Orchestrator returns “done” and Step Functions’ last state runs the publisher (a worker task in Phases 1–7, a Lambda in Phase 8), which reads the verified numbers from Postgres and writes the dashboard (a static page can’t query Postgres, so something has to publish). By 08:00 executives see correct numbers, and tomorrow’s load passes on mapping v2. One X-Ray trace records who acted, which tool, what came back, who approved.",
+  "hops": [
+   [
+    "~p-orch-ver",
+    "handoff · 4/4"
+   ],
+   [
+    "~p-sf-orch",
+    "done"
+   ],
+   [
+    "p-sf-pub",
+    "publish"
+   ]
+  ],
+  "detail": "dashboard"
+ }
+];
+  var CHAPTERS = [{"name": "Failure", "steps": [0, 1]}, {"name": "Investigate", "steps": [2, 3]}, {"name": "Fix safely", "steps": [4, 5]}, {"name": "Check & approve", "steps": [6, 7, 8]}, {"name": "Swap & verify", "steps": [9, 10]}, {"name": "Done", "steps": [11]}];
+  var AGENTS = [
+    {id:'orchestrator', n:'Coordinator', name:'Orchestrator', desc:'The hub. Briefs each specialist (6 items), validates every handoff, and asks for a human by returning “approval needed”.', tools:'Strands • Bedrock\nvalidates handoffs'},
+    {id:'detector', n:'Agent 01', name:'Detector', desc:'Finds what failed and where. Ends when the cause is locatable.', tools:'read_job_logs\nget_table_schema'},
+    {id:'diagnoser', n:'Agent 02', name:'Diagnoser', desc:'Explains why, grounded in runbook + memory. No source = “unknown”.', tools:'search_runbook\nrecall_lessons'},
+    {id:'fixer', n:'Agent 03', name:'Fixer', desc:'Builds the fix in the sandbox. No direct live write — live only via the approval-gated swap after the test passes.', tools:'write_test_copy\nswap_tables (swap + rollback) + publish_mapping (gated)'},
+    {id:'verifier', n:'Agent 04', name:'Verifier', desc:'Checks twice: the test copy before approval, live after the swap. Only reports — rollback is the Fixer’s job.', tools:'run_checks\nread-only'}
+  ];
+  var INTRO = {title:'A nightly load fails at 02:14', short:'Follow the fix in 12 short steps. Press Start to go one step at a time, or Play all to watch it run at the speed you choose.'};
+
+  // Pace. Normal moves a tag at about 200 px a second and leaves time to read each caption.
+  var SPEED = {
+    slow:   {pxPerMs:.13, min:1500, max:3800, gap:650, dwell:6200, perWord:90},
+    normal: {pxPerMs:.20, min:1000, max:2600, gap:400, dwell:4200, perWord:60},
+    fast:   {pxPerMs:.32, min:650,  max:1700, gap:220, dwell:2600, perWord:36}
+  };
+  var speed = 'normal';
+  function cfg(){ return SPEED[speed]; }
+
+  var NS = 'http://www.w3.org/2000/svg';
+  var svg = document.getElementById('diagram');
+  var wrap = document.getElementById('diagramWrap');
+  var $ = function(id){ return document.getElementById(id); };
+  var flows = {}, nodes = {};
+  Array.prototype.forEach.call(svg.querySelectorAll('.flow'), function(f){ flows[f.id] = f; f._me = f.getAttribute('marker-end'); f._ms = f.getAttribute('marker-start'); });
+  Array.prototype.forEach.call(svg.querySelectorAll('.node'), function(n){ nodes[n.getAttribute('data-node')] = n; });
+
+  function hopEnds(h){
+    var rev = h[0].charAt(0) === '~', id = rev ? h[0].slice(1) : h[0], pn = PATH_NODES[id];
+    return {id:id, rev:rev, from: rev ? pn[1] : pn[0], to: rev ? pn[0] : pn[1]};
+  }
+  STEPS.forEach(function(s){
+    s.nodes = [];
+    s.hops.forEach(function(h){
+      var e = hopEnds(h);
+      if(!flows[e.id] || !nodes[e.from] || !nodes[e.to]) throw new Error('Unknown flow or box in ' + h[0]);
+      [e.from, e.to].forEach(function(n){ if(s.nodes.indexOf(n) < 0) s.nodes.push(n); });
+    });
+    s.words = s.short.split(/\s+/).length;
+  });
+
+  // Layers drawn above the diagram: numbered badges for finished hops, and the moving tag.
+  var badges = document.createElementNS(NS, 'g'); badges.setAttribute('class', 'badges'); svg.appendChild(badges);
+  var token = document.createElementNS(NS, 'g'); token.setAttribute('class', 'token'); token.setAttribute('opacity', '0');
+  var tRect = document.createElementNS(NS, 'rect'); tRect.setAttribute('rx', '10'); tRect.setAttribute('height', '20'); tRect.setAttribute('y', '-10');
+  var tText = document.createElementNS(NS, 'text'); tText.setAttribute('text-anchor', 'middle'); tText.setAttribute('dy', '4');
+  token.appendChild(tRect); token.appendChild(tText); svg.appendChild(token);
+
+  var cur = -1, playing = false, animating = false, runTk = 0, dwellTimer = null;
+
+  function kindOf(f){ return f.classList.contains('badflow') ? 'bad' : (f.classList.contains('okflow') ? 'ok' : ''); }
+  function markerFor(kind){ return kind === 'bad' ? 'url(#arrowRed)' : (kind === 'ok' ? 'url(#arrowGreen)' : 'url(#arrowBlue)'); }
+  function setMarkers(f, rev, kind, show){
+    f.removeAttribute('marker-end'); f.removeAttribute('marker-start');
+    if(show) f.setAttribute(rev ? 'marker-start' : 'marker-end', markerFor(kind));
+  }
+  function restoreMarkers(f){
+    f.removeAttribute('marker-end'); f.removeAttribute('marker-start');
+    if(f._me) f.setAttribute('marker-end', f._me);
+    if(f._ms) f.setAttribute('marker-start', f._ms);
+  }
+  function setToken(label, kind){
+    tText.textContent = label;
+    var w = Math.max(44, tText.getComputedTextLength() + 20);
+    tRect.setAttribute('width', w); tRect.setAttribute('x', -w / 2);
+    token.setAttribute('class', 'token' + (kind ? ' ' + kind : ''));
+  }
+  function moveToken(pt){ token.setAttribute('transform', 'translate(' + pt.x.toFixed(1) + ',' + pt.y.toFixed(1) + ')'); }
+  function addBadge(f, n, kind){
+    var L = f.getTotalLength(), p = f.getPointAtLength(L * 0.5);
+    var g = document.createElementNS(NS, 'g'), c = document.createElementNS(NS, 'circle'), t = document.createElementNS(NS, 'text');
+    g.setAttribute('class', 'badge' + (kind ? ' ' + kind : ''));
+    g.setAttribute('transform', 'translate(' + Math.max(12, Math.min(966, p.x)).toFixed(1) + ',' + Math.max(12, Math.min(760, p.y)).toFixed(1) + ')');
+    c.setAttribute('r', '9'); t.setAttribute('text-anchor', 'middle'); t.setAttribute('dy', '3.6'); t.textContent = n;
+    g.appendChild(c); g.appendChild(t); badges.appendChild(g);
+  }
+  function reach(n, pulse){
+    var el = nodes[n]; el.classList.add('reached');
+    if(pulse && !reduce){ el.classList.remove('arrive'); void el.getBoundingClientRect(); el.classList.add('arrive'); }
+  }
+  function ease(t){ return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function tween(dur, tk, frame){
+    return new Promise(function(res){
+      var t0 = null;
+      function f(ts){
+        if(tk !== runTk){ res(false); return; }
+        if(t0 === null) t0 = ts;
+        var t = Math.min(1, (ts - t0) / dur);
+        frame(ease(t));
+        if(t < 1) requestAnimationFrame(f); else res(true);
+      }
+      requestAnimationFrame(f);
+    });
+  }
+  function wait(ms, tk){ return new Promise(function(res){ setTimeout(function(){ res(tk === runTk); }, ms); }); }
+
+  // Camera, for screens where the diagram is wider or taller than its window.
+  function scrollable(){ return wrap.scrollWidth > wrap.clientWidth + 4 || wrap.scrollHeight > wrap.clientHeight + 4; }
+  function contentPos(pt){
+    var sr = svg.getBoundingClientRect(), wr = wrap.getBoundingClientRect(), sc = sr.width / 980;
+    return {x: sr.left - wr.left + wrap.scrollLeft + pt.x * sc, y: sr.top - wr.top + wrap.scrollTop + pt.y * sc};
+  }
+  function follow(pt){
+    if(!scrollable()) return;
+    var c = contentPos(pt);
+    wrap.scrollLeft += (c.x - wrap.clientWidth / 2 - wrap.scrollLeft) * .12;
+    wrap.scrollTop += (c.y - wrap.clientHeight / 2 - wrap.scrollTop) * .12;
+  }
+  function panTo(pt, tk, instant){
+    if(!scrollable()) return Promise.resolve(true);
+    var c = contentPos(pt), x0 = wrap.scrollLeft, y0 = wrap.scrollTop;
+    var x1 = c.x - wrap.clientWidth / 2, y1 = c.y - wrap.clientHeight / 2;
+    var inView = c.x > x0 + wrap.clientWidth * .2 && c.x < x0 + wrap.clientWidth * .8 && c.y > y0 + wrap.clientHeight * .2 && c.y < y0 + wrap.clientHeight * .8;
+    if(inView) return Promise.resolve(true);
+    if(instant || reduce){ wrap.scrollLeft = x1; wrap.scrollTop = y1; return Promise.resolve(true); }
+    return tween(450, tk, function(e){ wrap.scrollLeft = x0 + (x1 - x0) * e; wrap.scrollTop = y0 + (y1 - y0) * e; });
+  }
+  function stepCentre(s){
+    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    s.nodes.forEach(function(n){ var b = nodes[n].querySelector('rect.main').getBBox(); x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.width); y1 = Math.max(y1, b.y + b.height); });
+    return {x: (x0 + x1) / 2, y: (y0 + y1) / 2};
+  }
+
+  function resetDiagram(stepping){
+    runTk++; animating = false; clearTimeout(dwellTimer); stopCountdown();
+    svg.classList.toggle('stepping', stepping);
+    Object.keys(flows).forEach(function(id){ var f = flows[id]; f.classList.remove('hop-now', 'hop-done'); f.style.strokeDasharray = ''; f.style.strokeDashoffset = ''; restoreMarkers(f); });
+    Object.keys(nodes).forEach(function(k){ nodes[k].classList.remove('in-step', 'reached', 'arrive', 'inspect'); });
+    while(badges.firstChild) badges.removeChild(badges.firstChild);
+    token.setAttribute('opacity', '0');
+  }
+  function finishHop(h, k){
+    var e = hopEnds(h), f = flows[e.id], kind = kindOf(f);
+    f.style.strokeDasharray = ''; f.style.strokeDashoffset = '';
+    f.classList.remove('hop-now'); f.classList.add('hop-done');
+    setMarkers(f, e.rev, kind, true);
+    addBadge(f, k + 1, kind);
+  }
+  async function playHop(h, k, tk){
+    var e = hopEnds(h), f = flows[e.id], kind = kindOf(f), c = cfg(), L = f.getTotalLength();
+    var dur = Math.max(c.min, Math.min(c.max, L / c.pxPerMs));
+    var start = f.getPointAtLength(e.rev ? L : 0);
+    if(!(await panTo(start, tk))) return false;
+    reach(e.from, false);
+    f.classList.add('hop-now'); setMarkers(f, e.rev, kind, false);
+    f.style.strokeDasharray = L + ' ' + L; f.style.strokeDashoffset = e.rev ? -L : L;
+    setToken(h[1], kind); moveToken(start); token.setAttribute('opacity', '1');
+    var ok = await tween(dur, tk, function(p){
+      var pt = f.getPointAtLength(e.rev ? L * (1 - p) : L * p);
+      moveToken(pt);
+      f.style.strokeDashoffset = e.rev ? -L * (1 - p) : L * (1 - p);
+      follow(pt);
+    });
+    if(!ok) return false;
+    finishHop(h, k); reach(e.to, true);
+    return true;
+  }
+  async function runHops(s, tk){
+    animating = true;
+    reach(hopEnds(s.hops[0]).from, false);
+    for(var k = 0; k < s.hops.length; k++){
+      if(!(await playHop(s.hops[k], k, tk))) return;
+      if(k < s.hops.length - 1 && !(await wait(cfg().gap, tk))) return;
+    }
+    await wait(500, tk);
+    if(tk === runTk) token.setAttribute('opacity', '0');
+    stepDone(tk);
+  }
+  function dwellMs(s){ var c = cfg(); return c.dwell + s.words * c.perWord; }
+  function stepDone(tk){
+    if(tk !== runTk) return;
+    animating = false;
+    if(!playing) return;
+    if(cur >= STEPS.length - 1){ setPlaying(false); return; }
+    var ms = dwellMs(STEPS[cur]);
+    startCountdown(ms);
+    dwellTimer = setTimeout(function(){ if(tk === runTk && playing) showStep(cur + 1, true); }, ms);
+  }
+
+  function showStep(i, animate){
+    resetDiagram(i >= 0);
+    cur = i; updateUI();
+    if(i < 0){ showDetail(null); return; }
+    var s = STEPS[i], tk = runTk;
+    s.nodes.forEach(function(n){ nodes[n].classList.add('in-step'); });
+    showDetail(s.detail);
+    if(!animate || reduce){
+      s.hops.forEach(function(h, k){ finishHop(h, k); });
+      s.nodes.forEach(function(n){ nodes[n].classList.add('reached'); });
+      panTo(stepCentre(s), tk, true);
+      stepDone(tk);
+      return;
+    }
+    runHops(s, tk);
+  }
+
+  // Countdown bar while Play all waits before the next step.
+  var cdBar = $('cdBar');
+  function startCountdown(ms){ cdBar.style.transition = 'none'; cdBar.style.width = '0%'; void cdBar.offsetWidth; cdBar.style.transition = 'width ' + ms + 'ms linear'; cdBar.style.width = '100%'; }
+  function stopCountdown(){ cdBar.style.transition = 'none'; cdBar.style.width = '0%'; }
+
+  function playLabel(on){
+    var b = $('playBtn'), again = !on && cur >= STEPS.length - 1;
+    b.innerHTML = on ? '❚❚<span class="lbl"> Pause</span>' : (again ? '↻<span class="lbl"> Play again</span>' : '▶<span class="lbl"> Play all</span>');
+    b.setAttribute('aria-label', on ? 'Pause' : (again ? 'Play again' : 'Play all'));
+  }
+  function setPlaying(on){
+    playing = on;
+    playLabel(on);
+    $('nowBox').setAttribute('aria-live', on ? 'off' : 'polite');
+    if(!on){ clearTimeout(dwellTimer); stopCountdown(); }
+  }
+  function play(){
+    setPlaying(true);
+    if(cur < 0 || cur >= STEPS.length - 1){ showStep(0, true); return; }
+    if(!animating) showStep(cur + 1, true);
+  }
+  function userGo(i){ setPlaying(false); showStep(Math.max(-1, Math.min(STEPS.length - 1, i)), true); }
+
+  // Panel, chapters and step list.
+  var chapWrap = $('chapters'), list = $('stepsList');
+  CHAPTERS.forEach(function(ch, ci){
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'chap';
+    b.setAttribute('aria-label', 'Chapter ' + (ci + 1) + ': ' + ch.name + ', steps ' + (ch.steps[0] + 1) + ' to ' + (ch.steps[ch.steps.length - 1] + 1));
+    b.innerHTML = '<span class="cname">' + ch.name + '</span><span class="dots">' + ch.steps.map(function(){ return '<i></i>'; }).join('') + '</span>';
+    b.addEventListener('click', function(){ userGo(ch.steps[0]); });
+    chapWrap.appendChild(b); ch.el = b;
+  });
+  STEPS.forEach(function(s, i){
+    var li = document.createElement('li'); li.tabIndex = 0; li.setAttribute('role', 'button');
+    li.innerHTML = '<span class="stime">' + s.time + '</span><span><span class="stitle">' + s.title + '</span><br><span class="sdesc">' + s.short + '</span></span>';
+    li.addEventListener('click', function(){ userGo(i); document.querySelector('.stage').scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block: 'start'}); });
+    li.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); li.click(); } });
+    list.appendChild(li);
+  });
+
+  // Agent cards: tap one for its details; the card for the current step is highlighted.
+  var agentWrap = $('agentCards');
+  AGENTS.forEach(function(a){
+    var b = document.createElement('button'); b.className = 'agent-card'; b.type = 'button'; b.dataset.agent = a.id;
+    b.innerHTML = '<span class="agent-num">' + a.n.toUpperCase() + '</span><h3>' + a.name + '</h3><p>' + a.desc + '</p><div class="tools">' + a.tools.replace(/\n/g, '<br>') + '</div>';
+    b.addEventListener('click', function(){ inspect(a.id); });
+    agentWrap.appendChild(b);
+  });
+  function highlightAgents(id){ Array.prototype.forEach.call(document.querySelectorAll('.agent-card'), function(c){ c.classList.toggle('active', c.dataset.agent === id); }); }
+
+  function updateUI(){
+    var s = cur >= 0 ? STEPS[cur] : null;
+    svg.classList.toggle('failed', cur >= 1);
+    $('nowTime').textContent = s ? s.time : '02:14';
+    $('nowStep').textContent = s ? (cur + 1) + ' of ' + STEPS.length : 'Overview';
+    $('nowTitle').textContent = s ? s.title : INTRO.title;
+    $('nowShort').textContent = s ? s.short : INTRO.short;
+    $('nowFull').textContent = s ? s.desc : '';
+    $('moreBtn').hidden = !s;
+    if(!s){ $('nowFull').hidden = true; $('moreBtn').setAttribute('aria-expanded', 'false'); $('moreBtn').textContent = 'Full explanation'; }
+    CHAPTERS.forEach(function(ch){
+      ch.el.classList.toggle('on', ch.steps.indexOf(cur) > -1);
+      Array.prototype.forEach.call(ch.el.querySelectorAll('.dots i'), function(d, k){ var si = ch.steps[k]; d.className = si < cur ? 'done' : (si === cur ? 'cur' : ''); });
+    });
+    Array.prototype.forEach.call(list.children, function(li, k){ li.classList.toggle('cur', k === cur); });
+    $('prevBtn').disabled = cur < 0;
+    $('nextBtn').disabled = cur >= STEPS.length - 1;
+    $('nextBtn').textContent = cur < 0 ? 'Start →' : 'Next →';
+    if(!playing) playLabel(false);
+  }
+
+  function showDetail(id){
+    var d = id && DETAILS[id], box = $('detailContent');
+    highlightAgents(id || null);
+    if(!d){ box.innerHTML = '<p class="role">Tap a box</p><h3>What does each part do?</h3><p>Tap any box in the diagram, or an agent below, to read what it does. Tapping pauses the replay.</p>'; return; }
+    box.innerHTML = '<p class="role">' + d.role + '</p><h3>' + d.title + '</h3><p>' + d.body + '</p><ul>' + d.list.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul>';
+  }
+  function inspect(id){
+    setPlaying(false);
+    if(cur >= 0) showStep(cur, false); else resetDiagram(false);
+    nodes[id].classList.add('inspect');
+    showDetail(id);
+    if(window.innerWidth <= 760) $('detailCard').scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block: 'nearest'});
+  }
+
+  $('nextBtn').addEventListener('click', function(){ userGo(cur + 1); });
+  $('prevBtn').addEventListener('click', function(){ userGo(cur - 1); });
+  $('replayBtn').addEventListener('click', function(){ setPlaying(false); showStep(cur < 0 ? 0 : cur, true); });
+  $('playBtn').addEventListener('click', function(){ if(playing) setPlaying(false); else play(); });
+  $('moreBtn').addEventListener('click', function(){
+    var open = $('nowFull').hidden;
+    $('nowFull').hidden = !open; this.setAttribute('aria-expanded', String(open));
+    this.textContent = open ? 'Hide full explanation' : 'Full explanation';
+    if(open) setPlaying(false);
+  });
+  var SPEED_ORDER = ['slow', 'normal', 'fast'], SPEED_NAME = {slow:'Slow', normal:'Normal', fast:'Fast'};
+  function setSpeed(k){
+    speed = k;
+    Array.prototype.forEach.call(document.querySelectorAll('.seg button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.speed === k)); });
+    $('speedBtn').textContent = SPEED_NAME[k];
+    $('speedBtn').setAttribute('aria-label', 'Speed: ' + SPEED_NAME[k] + '. Tap to change');
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.seg button'), function(b){ b.addEventListener('click', function(){ setSpeed(b.dataset.speed); }); });
+  $('speedBtn').addEventListener('click', function(){ setSpeed(SPEED_ORDER[(SPEED_ORDER.indexOf(speed) + 1) % 3]); });
+  Object.keys(nodes).forEach(function(k){
+    var n = nodes[k];
+    n.addEventListener('click', function(){ inspect(k); });
+    n.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); inspect(k); } });
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    var t = e.target && e.target.tagName;
+    if(t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+    if(e.key === 'ArrowRight' && cur < STEPS.length - 1) userGo(cur + 1);
+    if(e.key === 'ArrowLeft' && cur > -1) userGo(cur - 1);
+  });
+
+  // For checks in the browser console: the data, a full Play all in seconds per speed, and step controls.
+  window.__apa = {STEPS: STEPS, PATH_NODES: PATH_NODES, totals: function(){
+    var out = {};
+    Object.keys(SPEED).forEach(function(k){
+      var c = SPEED[k], ms = 0;
+      STEPS.forEach(function(s, i){
+        s.hops.forEach(function(h, j){ var L = flows[hopEnds(h).id].getTotalLength(); ms += Math.max(c.min, Math.min(c.max, L / c.pxPerMs)); if(j < s.hops.length - 1) ms += c.gap; });
+        ms += 500;
+        if(i < STEPS.length - 1) ms += c.dwell + s.words * c.perWord;
+      });
+      out[k] = Math.round(ms / 1000);
+    });
+    return out;
+  }, go: function(i){ showStep(i, true); }, state: function(){ return {cur: cur, playing: playing, animating: animating}; }};
+
+  showStep(-1, false);
+})();
+
+</script>
+</body>
+</html>
