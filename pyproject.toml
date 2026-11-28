@@ -9,7 +9,7 @@ dependencies = []
 [dependency-groups]
 # CI linters and policy scanners. uv syncs the "dev" group by default.
 dev = [
-    "cfn-lint==1.60.1",
+    "cfn-lint==1.61.0",
     "zizmor==1.33.1",
 ]
 

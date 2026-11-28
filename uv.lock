@@ -21,13 +21,13 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "cfn-lint", specifier = "==1.60.1" },
+    { name = "cfn-lint", specifier = "==1.61.0" },
     { name = "zizmor", specifier = "==1.33.1" },
 ]
 
 [[package]]
 name = "cfn-lint"
-version = "1.60.1"
+version = "1.61.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jsonpatch" },
@@ -37,9 +37,9 @@ dependencies = [
     { name = "sympy" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a9/9c/114b3e8bab54caa706ad9294982499f4d86e84d041953904e5ce5c4e72e6/cfn_lint-1.60.1.tar.gz", hash = "sha256:d07d50f0f60b5c719ed3ddcd06ab7329209f74892a14e1e853c49fe4d4bb5dce", size = 5185134, upload-time = "2026-11-12T16:11:11.679Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9a/cd/82bc68b69eb8a1a6a09a88ad6a0b54e1990ea127665e4c9faa8b1ea0f4c9/cfn_lint-1.61.0.tar.gz", hash = "sha256:a408e1ae0a059b1e8cdcd581c01545ebc99a40961e2edd2a1c0a77e463dcc922", size = 5243970, upload-time = "2026-11-19T22:48:21.77Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/4f/4fb7a278916ce8383efe9c2a5dcc72042cdec0a2b4b3e603a070dd044fe1/cfn_lint-1.60.1-py3-none-any.whl", hash = "sha256:3c2b9390fc8f8328c8f5655caa254578b499028e725c198fdc3ba95bdf0aa004", size = 5789445, upload-time = "2026-11-12T16:11:09.152Z" },
+    { url = "https://files.pythonhosted.org/packages/12/ee/19b224f0c957d748ed8ed22ecb615f099d5fdc4a9d8c488fae546d423f82/cfn_lint-1.61.0-py3-none-any.whl", hash = "sha256:0fe32c20bce54dde16b777f453c071b633a76de75e6ee32e5bb7fc12e052856e", size = 5862112, upload-time = "2026-11-19T22:48:19.509Z" },
 ]
 
 [[package]]
