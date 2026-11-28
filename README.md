@@ -54,7 +54,7 @@ Each project lives in `projects/<project>/`, deploys through its own workflow, a
 
 | Project | What it does |
 |:--|:--|
-| [**Agentic Pipeline Assurance**](#agentic-pipeline-assurance-apa)<br>🟡 Designed, Phase 0 next | AI agents find, fix and prove a broken nightly data load, and wait for a person before anything touches live data |
+| [**Agentic Pipeline Assurance**](#agentic-pipeline-assurance-apa) | AI agents find, fix and prove a broken nightly data load, and wait for a person before anything touches live data |
 
 > [!TIP]
 > `projects/sample` is the starter project: one hardened S3 bucket per environment. It proves the pipeline works end to end, and it is the pattern to follow when you [add a project](#add-a-project).
@@ -99,17 +99,17 @@ You get one email with the evidence, and nothing changes in live until you appro
 
 Each phase ends with a gate: a short checklist that must pass before the next phase starts.
 
-| Phase | What it adds | Time | Status |
-|:--:|:--|:--:|:--:|
-| 0 | Foundations: tools, repo, roles, three spikes and a hello-world deploy | 1 week | ⏳ next |
-| 1 | The pipeline, no agents: make the nightly load fail properly | 2 weeks | |
-| 2 | The first agent: the Detector, MCP tools and the agent loop | 2 weeks | |
-| 3 | The Diagnoser: RAG, memory and grounding | 2 weeks | |
-| 4 | The Fixer: sandbox, guardrails, policy, identity and approval | 4 weeks | |
-| 5 | The Verifier and the eval set: proof instead of "it worked" | 2 weeks | |
-| 6 | The Orchestrator: four specialists become a team | 2 weeks | |
-| 7 | Observability, protocols and a comparison of two models | 3 weeks | |
-| 8 | Ship it: the cloud demo, the portfolio, and switching off | 2 weeks | |
+| Phase | What it adds | Time |
+|:--:|:--|:--:|
+| 0 | Foundations: tools, repo, roles, three spikes and a hello-world deploy | 1 week |
+| 1 | The pipeline, no agents: make the nightly load fail properly | 2 weeks |
+| 2 | The first agent: the Detector, MCP tools and the agent loop | 2 weeks |
+| 3 | The Diagnoser: RAG, memory and grounding | 2 weeks |
+| 4 | The Fixer: sandbox, guardrails, policy, identity and approval | 4 weeks |
+| 5 | The Verifier and the eval set: proof instead of "it worked" | 2 weeks |
+| 6 | The Orchestrator: four specialists become a team | 2 weeks |
+| 7 | Observability, protocols and a comparison of two models | 3 weeks |
+| 8 | Ship it: the cloud demo, the portfolio, and switching off | 2 weeks |
 
 </details>
 
